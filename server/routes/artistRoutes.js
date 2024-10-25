@@ -3,14 +3,18 @@ import express from 'express';
 import mysql2 from 'mysql2';
 import multer from 'multer';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 const router = express.Router();
+
 
 // Create a MySQL connection pool
 const db = mysql2.createPool({
-    host: 'database-1.cleaac04samt.us-east-2.rds.amazonaws.com',
-    user: 'member_1',
-    password: 'afirstratematerial!=',
-    database: 'banger'
+    host: process.env.DB_HOST,  
+    user: process.env.DB_USER,       
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME, 
 });
 
 // Get all artists

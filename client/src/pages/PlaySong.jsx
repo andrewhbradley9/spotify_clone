@@ -2,9 +2,11 @@ import React from 'react';
 import ReactPlayer from 'react-player';
 import { useParams } from 'react-router-dom';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const PlaySong = () => {
     const { songId } = useParams();
-    const audioSrc = `http://localhost:3360/artists/play/${songId}`;
+    const audioSrc = `${apiUrl}/artists/play/${songId}`;
 
     return (
         <div style={{ textAlign: 'center', marginTop: '20px' }}>

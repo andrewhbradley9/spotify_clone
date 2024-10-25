@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const Artist = () => {
     const [artists, setArtist] = useState([]);
 
     useEffect(() => {
         const fetchAllArtists = async () => {
             try {
-                const res = await axios.get("http://localhost:3360/artists");
+                const res = await axios.get(`${apiUrl}/artists`);
                 setArtist(res.data);
             } catch (err) {
                 console.log("Error fetching artists:", err);
@@ -19,7 +21,7 @@ const Artist = () => {
 
     const handleDelete = async (id) => {
         try {
-            const response = await axios.delete(`http://localhost:3360/artists/${id}`);
+            const response = await axios.delete(`${apiUrl}/artists/${id}`);
             console.log("Delete response:", response.data); // Log the response
             setArtist((prev) => prev.filter((artist) => artist.artist_id !== id));
         } catch (err) {

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const Albums = () => {
     const { id: artistId } = useParams(); // Get artistId from URL parameters
     const navigate = useNavigate(); // Initialize useNavigate
@@ -13,16 +15,16 @@ const Albums = () => {
     useEffect(() => {
         const fetchAlbums = async () => {
             try {
-                const artistResponse = await axios.get(`http://localhost:3360/artists/${artistId}`);
+                const artistResponse = await axios.get(`${apiUrl}/artists/${artistId}`);
                 setArtistName(artistResponse.data.artistname);
 
-                const response = await axios.get(`http://localhost:3360/artists/albums/${artistId}`);
+                const response = await axios.get(`${apiUrl}/artists/albums/${artistId}`);
                 const albumsData = response.data;
 
                 // Fetch songs for each album and calculate total duration
                 const albumsWithSongs = await Promise.all(
                     albumsData.map(async (album) => {
-                        const songsResponse = await axios.get(`http://localhost:3360/artists/albums/${album.album_id}/songs/${artistId}`);
+                        const songsResponse = await axios.get(`${apiUrl}/artists/albums/${album.album_id}/songs/${artistId}`);
                         const songs = songsResponse.data;
 
                         // Calculate total duration in seconds

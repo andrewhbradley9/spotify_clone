@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
+
 const UploadSong = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -29,7 +32,7 @@ const UploadSong = () => {
     useEffect(() => {
         const fetchAlbums = async () => {
             try {
-                const response = await axios.get(`http://localhost:3360/artists/albums/${artistId}`);
+                const response = await axios.get(`${apiUrl}/artists/albums/${artistId}`);
                 setAlbums(response.data);
             } catch (err) {
                 setError('Error fetching albums');
@@ -71,7 +74,7 @@ const UploadSong = () => {
         formData.append('album_id', selectedAlbumId); // Include album_id in the payload
 
         try {
-            await axios.post(`http://localhost:3360/artists/albums/${selectedAlbumId}/songs/${artistId}`, formData, {
+            await axios.post(`${apiUrl}/artists/albums/${selectedAlbumId}/songs/${artistId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data', // Set the content type for file upload
                 },

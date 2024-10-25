@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const Update = () => {
     const [artist, setArtist] = useState({
         artistname: "",
@@ -24,7 +26,7 @@ const Update = () => {
     useEffect(() => {
         const fetchArtistData = async () => {
             try {
-                const res = await axios.get(`http://localhost:3360/artists/${artistId}`);
+                const res = await axios.get(`${apiUrl}/artists/${artistId}`);
                 setArtist(res.data);
             } catch (err) {
                 console.log(err);
@@ -54,7 +56,7 @@ const Update = () => {
         };
 
         try {
-            await axios.put(`http://localhost:3360/artists/${artistId}`, artistData);
+            await axios.put(`${apiUrl}/artists/${artistId}`, artistData);
             navigate("/");
         } catch (err) {
             console.log(err);

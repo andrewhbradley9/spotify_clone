@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
+
 const AlbumSongs = () => {
     const { albumId, artistId } = useParams(); // Get albumId and artistId from URL parameters
     const navigate = useNavigate(); // Initialize useNavigate
@@ -14,11 +17,11 @@ const AlbumSongs = () => {
         const fetchAlbumAndSongs = async () => {
             try {
                 // Fetch album details including release date and total duration
-                const albumResponse = await axios.get(`http://localhost:3360/artists/targetalbum/${albumId}`);
+                const albumResponse = await axios.get(`${apiUrl}/targetalbum/${albumId}`);
                 setAlbumDetails(albumResponse.data);
 
                 // Fetch songs for the album
-                const songsResponse = await axios.get(`http://localhost:3360/artists/albums/${albumId}/songs/${artistId}`);
+                const songsResponse = await axios.get(`${apiUrl}/albums/${albumId}/songs/${artistId}`);
                 setSongs(songsResponse.data);
             } catch (err) {
                 setError('Error fetching album or songs');
