@@ -1,0 +1,168 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+const UploadSong = () => {
+    const location = useLocation();
+    const navigate = useNavigate(); // Use the useNavigate hook
+    const artistId = location.pathname.split("/")[2]; // Extract artistId from the path
+    const [albums, setAlbums] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [selectedAlbumId, setSelectedAlbumId] = useState(""); // State to hold the selected album
+    const [songData, setSongData] = useState({ // State for song upload form data
+        song_id: '', // Added song_id to the state
+        title: '',
+        songimage: '',
+        duration: '',
+        song_releasedate: '',
+        genre_type: '',
+        song_language: '',
+        file_path: ''
+    });
+    const handleGoHome = () => {
+        navigate('/');
+    };
+    useEffect(() => {
+        const fetchAlbums = async () => {
+            try {
+                const response = await axios.get(`http://localhost:3360/artists/albums/${artistId}`); // Use the correct port for your backend
+                setAlbums(response.data);
+            } catch (err) {
+                setError('Error fetching albums');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAlbums();
+    }, [artistId]);
+
+    const handleAlbumChange = (event) => {
+        setSelectedAlbumId(event.target.value);
+    };
+
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setSongData(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        try {
+           await axios.post(`http://localhost:3360/artists/albums/${selectedAlbumId}/songs/${artistId}`, {
+                ...songData,
+                album_id: selectedAlbumId // Include album_id in the payload
+            });
+            alert('Song uploaded successfully!');
+            // Navigate back to the main screen
+            navigate('/'); // Adjust the path if your main screen is different
+        } catch (err) {
+            console.error('Error uploading song:', err);
+            alert('Error uploading song.');
+        }
+    };
+
+    if (loading) {
+        return <div>Loading albums...</div>;
+    }
+
+    if (error) {
+        return <div>{error}</div>;
+    }
+
+    return (
+        <div>
+            <button className="cancel" onClick={handleGoHome}>Cancel</button>
+            <h2>Select an Album and Upload a Song</h2>
+            {albums.length > 0 ? (
+                <select value={selectedAlbumId} onChange={handleAlbumChange}>
+                    <option value="" disabled>Select an album</option>
+                    {albums.map(album => (
+                        <option key={album.album_id} value={album.album_id}>
+                            {album.album_name} (Release Date: {album.release_date})
+                        </option>
+                    ))}
+                </select>
+            ) : (
+                <p>No albums found for this artist.</p>
+            )}
+
+            {selectedAlbumId && (
+                <form onSubmit={handleSubmit}>
+                    <h3>Upload Song</h3>
+                    <input
+                        type="text"
+                        name="song_id"
+                        placeholder="Song ID"
+                        value={songData.song_id}
+                        onChange={handleInputChange}
+                        required
+                    />
+                    <input
+                        type="text"
+                        name="title"
+                        placeholder="Song Title"
+                        value={songData.title}
+                        onChange={handleInputChange}
+                        required
+                    />
+                    <input
+                        type="text"
+                        name="songimage"
+                        placeholder="Song Image URL"
+                        value={songData.songimage}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="text"
+                        name="duration"
+                        placeholder="Duration (e.g., 00:03:30)"
+                        value={songData.duration}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="date"
+                        name="song_releasedate"
+                        value={songData.song_releasedate}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="text"
+                        name="genre_type"
+                        placeholder="Genre"
+                        value={songData.genre_type}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="text"
+                        name="song_language"
+                        placeholder="Language"
+                        value={songData.song_language}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="text"
+                        name="file_path"
+                        placeholder="File Path (optional)"
+                        value={songData.file_path}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="longblob"
+                        name="mp3_data"
+                        placeholder="mp3_data"
+                        value={songData.file_path}
+                        onChange={handleInputChange}
+                    />
+                    <button type="submit">Upload Song</button>
+                </form>
+            )}
+        </div>
+    );
+};
+
+export default UploadSong;
