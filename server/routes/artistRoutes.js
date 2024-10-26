@@ -267,32 +267,71 @@ router.put('/:id', (req, res) => {
     });
 });
 
-//get artist via name or genre
-router.get('/search', async (req, res) => {
-    const searchQuery = req.query.query; // Get the 'query' parameter from the URL
+//play song
+router.get('/play/:songId', (req, res) => {
+    const songId = req.params.songId;
+    console.log(`Received request to play song with ID: ${songId}`); // Log the songId
 
-    if (!searchQuery) {
-        return res.status(400).json({ error: "Search query is required" });
-    }
-
-    try {
-        // Perform a fuzzy search on the artistname or genre_type
-        const [results] = await db.query(
-            `SELECT * FROM artist 
-             WHERE artistname LIKE ? 
-             OR genre_type LIKE ?`,
-            [`%${searchQuery}%`, `%${searchQuery}%`]
-        );
-
-        if (results.length === 0) {
-            return res.status(404).json({ message: "No artists found." });
+    const query = 'SELECT mp3_data FROM song WHERE song_id = ?';
+    db.query(query, [songId], (err, results) => {
+        if (err) {
+            console.error('Error fetching song:', err);
+            return res.status(500).send('Error fetching song.');
         }
 
-        res.json(results); // Send back the search results
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to search for artists." });
+        if (results.length === 0) {
+            console.log(`No song found with ID: ${songId}`); // Log if no results found
+            return res.status(404).send('Song not found.');
+        }
+
+        const mp3Data = results[0].mp3_data;
+
+        // Log the size of the MP3 data being sent
+        console.log(`Sending song data of size: ${mp3Data.length} bytes`);
+
+        // Set headers to indicate that this is an audio file
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Length', mp3Data.length);
+        res.send(mp3Data);
+    });
+});
+
+// Search artist
+router.get('/search/artistname', (req, res) => {
+    const searchTerm = req.query.term;
+    if (!searchTerm) {
+        return res.status(400).json({ error: 'Search term is required' });
     }
+
+    const query = `SELECT * FROM artist WHERE artistname LIKE ?`;
+    const searchValue = `%${searchTerm}%`;
+
+    db.query(query, [searchValue], (err, results) => {
+        if (err) {
+            console.error('Error executing search query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json(results);
+    });
+});
+
+// Search songs
+router.get('/search/songname', (req, res) => {
+    const searchTerm = req.query.term;
+    if (!searchTerm) {
+        return res.status(400).json({ error: 'Search term is required' });
+    }
+
+    const query = `SELECT * FROM song WHERE title LIKE ?`;
+    const searchValue = `%${searchTerm}%`;
+
+    db.query(query, [searchValue], (err, results) => {
+        if (err) {
+            console.error('Error executing search query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json(results);
+    });
 });
 
 export default router;
