@@ -267,32 +267,41 @@ router.put('/:id', (req, res) => {
     });
 });
 
-//get artist via name or genre
-router.get('/search', async (req, res) => {
-    const searchQuery = req.query.query; // Get the 'query' parameter from the URL
-
-    if (!searchQuery) {
-        return res.status(400).json({ error: "Search query is required" });
+// Search artist
+router.get('/search/artistname', (req, res) => {
+    const searchTerm = req.query.term;
+    if (!searchTerm) {
+        return res.status(400).json({ error: 'Search term is required' });
     }
 
-    try {
-        // Perform a fuzzy search on the artistname or genre_type
-        const [results] = await db.query(
-            `SELECT * FROM artist 
-             WHERE artistname LIKE ? 
-             OR genre_type LIKE ?`,
-            [`%${searchQuery}%`, `%${searchQuery}%`]
-        );
+    const query = `SELECT * FROM artist WHERE artistname LIKE ?`;
+    const searchValue = `%${searchTerm}%`;
 
-        if (results.length === 0) {
-            return res.status(404).json({ message: "No artists found." });
+    db.query(query, [searchValue], (err, results) => {
+        if (err) {
+            console.error('Error executing search query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
         }
-
-        res.json(results); // Send back the search results
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to search for artists." });
-    }
+        res.json(results);
+    });
 });
 
+// Search songs
+router.get('/search/songname', (req, res) => {
+    const searchTerm = req.query.term;
+    if (!searchTerm) {
+        return res.status(400).json({ error: 'Search term is required' });
+    }
+
+    const query = `SELECT * FROM song WHERE title LIKE ?`;
+    const searchValue = `%${searchTerm}%`;
+
+    db.query(query, [searchValue], (err, results) => {
+        if (err) {
+            console.error('Error executing search query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json(results);
+    });
+});
 export default router;
