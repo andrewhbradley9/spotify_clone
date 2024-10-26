@@ -6,6 +6,8 @@ import UploadSong from "./pages/UploadSong";
 import Albums from "./pages/Albums";
 import Songs from "./pages/Songs";
 import PlaySong from "./pages/PlaySong";
+import SearchArtist from "./pages/SearchArtist";
+import SearchSong from "./pages/SearchSong";
 
 import "./style.css"
 function App() {
@@ -20,6 +22,8 @@ function App() {
           <Route path="/albums/:id" element={<Albums/>}/>
           <Route path="/albums/:albumId/songs/:artistId" element={<Songs/>} />
           <Route path="/play/:songId" element={<PlaySong />} />
+          <Route path="/search/artist" element={<SearchArtist />} />
+          <Route path="/search/song" element={<SearchSong />} />
         </Routes>
       </BrowserRouter>
     </div>
