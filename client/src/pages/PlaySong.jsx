@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactPlayer from 'react-player';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate,Link  } from 'react-router-dom';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -19,6 +19,9 @@ const PlaySong = () => {
                 height='50px' 
             />
             <p style={{ marginTop: '10px' }}>Enjoy the music!</p>
+            <button className="cancel"><Link to={`/albums/:albumId/songs/:artistId`}>Back to Album</Link></button>
+            <p><button className="cancel"><Link to={`/search/song`}>Search Song</Link></button></p>
+            <div><p><button className="cancel" onClick={handleGoHome}>Back to Artists</button></p></div>
         </div>
     );
 };
