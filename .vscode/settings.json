@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "undefined/subscriptions/88de5351-bfb3-4057-b576-0c0ee9fbf1f4/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/banger-backend",
+    "appService.deploySubpath": "server"
+}

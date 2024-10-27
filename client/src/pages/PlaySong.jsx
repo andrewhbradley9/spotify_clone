@@ -4,9 +4,16 @@ import { useParams, useNavigate,Link  } from 'react-router-dom';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
+
+
 const PlaySong = () => {
     const { songId } = useParams();
     const audioSrc = `${apiUrl}/artists/play/${songId}`;
+    const navigate = useNavigate();
+
+    const handleGoHome = () => {
+        navigate('/');
+    };
 
     return (
         <div style={{ textAlign: 'center', marginTop: '20px' }}>
