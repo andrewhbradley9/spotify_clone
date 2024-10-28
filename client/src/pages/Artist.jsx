@@ -33,35 +33,42 @@ const Artist = () => {
     
     return (
         <div>
-            <h1>coog_music</h1>
-            <div className="artists">
-                {artists.map(artist => (
-                    <div className="artist" key={artist.artist_id}>
-                        {artist.artist_image ? (
-                            <img src={artist.artist_image} alt={artist.artistname} />
-                        ) : (
-                            <p>No image available</p>
-                        )}
-                        <h2>Artist: <span>{artist.artistname}</span></h2>
-                        <p>Bio: <span>{artist.artist_bio || "No biography available"}</span></p>
-                        <p>Events: <span>{artist.artist_event || "No Events Currently"}</span></p>
-                        <p>Awards: <span>{artist.awards || "none"}</span></p>
-                        <p>Genre: <span>{artist.genre_type || "Unknown genre"}</span></p>
-                        <p>Followers: <span>{artist.follower_count > 0 ? artist.follower_count : "No followers"}</span></p>
-                        <p>{artist.is_verified ? "Verified Artist" : "Not Verified"}</p>
-                        <button className="delete" onClick={() => handleDelete(artist.artist_id)}>Delete</button>
-                        <button className="update"><Link to={`/update/${artist.artist_id}`}>Update</Link></button>
-                        <button className="upload"><Link to={`/uploadSong/${artist.artist_id}`}>Upload a Song</Link></button>
-                        <button className="album"><Link to={`/albums/${artist.artist_id}`}>Albums and Songs</Link></button>
-                    </div>
-                ))}
-            </div>
-            <p>
-                <button className="add">
-                    <Link to="/add">Add new Artist</Link>
-                </button>
-            </p>
+        <h1>coog_music</h1>
+        <div className="artists">
+            {artists.map(artist => (
+                <div className="artist" key={artist.artist_id}>
+                    {artist.artist_image ? (
+                        <img src={artist.artist_image} alt={artist.artistname} />
+                    ) : (
+                        <p>No image available</p>
+                    )}
+                    <h2>Artist: <span>{artist.artistname}</span></h2>
+                    <p>Bio: <span>{artist.artist_bio || "No biography available"}</span></p>
+                    <p>Events: <span>{artist.artist_event || "No Events Currently"}</span></p>
+                    <p>Awards: <span>{artist.awards || "none"}</span></p>
+                    <p>Genre: <span>{artist.genre_type || "Unknown genre"}</span></p>
+                    <p>Followers: <span>{artist.follower_count > 0 ? artist.follower_count : "No followers"}</span></p>
+                    <p>{artist.is_verified ? "Verified Artist" : "Not Verified"}</p>
+                    <button className="delete" onClick={() => handleDelete(artist.artist_id)}>Delete</button>
+                    <button className="update"><Link to={`/update/${artist.artist_id}`}>Update</Link></button>
+                    <button className="upload"><Link to={`/uploadSong/${artist.artist_id}`}>Upload a Song</Link></button>
+                    <button className="album"><Link to={`/albums/${artist.artist_id}`}>Albums and Songs</Link></button>
+                </div>
+            ))}
         </div>
+        {/* Link to a specific song (adjust songId as needed) */}
+        <p>
+            <button className="play">
+                <Link to={`/play/12`}>Play a Song</Link> {/* Replace `123` with an actual song ID */}
+            </button>
+        </p>
+        <p>
+            <button className="add">
+                <Link to="/add">Add new Artist</Link>
+            </button>
+        </p>
+    </div>
+    
     );
 };
 
