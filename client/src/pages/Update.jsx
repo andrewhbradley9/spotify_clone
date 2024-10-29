@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-
 const apiUrl = process.env.REACT_APP_API_URL;
-
 const Update = () => {
     const [artist, setArtist] = useState({
         artistname: "",
