@@ -6,17 +6,15 @@
     align-items: center;
     justify-content: flex-start; /* Aligns content to the top */
     text-align: center;
-    /* Updated gradient background to fade between two colors */
-    background: linear-gradient(to bottom right, #40d04c, #3ea8cf); /* Light peach to light coral */
+    background: linear-gradient(to bottom right, #40d04c, #3ea8cf); /* Gradient background */
 }
-
 
 h1 {
     color: #3e2723; /* Dark brown for title */
     margin-bottom: 20px; /* Space below title */
 }
 
-.artists {
+.artists, .top-artists { /* Apply the same styles to both classes */
     display: flex;
     flex-wrap: wrap; /* Allow wrapping for better responsiveness */
     justify-content: center; /* Center the artist cards */
@@ -43,6 +41,8 @@ img {
     object-fit: cover;
     border-radius: 8px; /* Rounded corners for images */
 }
+
+/* Button styles omitted for brevity */
 
 .delete {
     border: none;
@@ -167,4 +167,25 @@ input {
 
 .add:hover {
     background-color: #8768b9; /* Darker coral on hover */
+}
+
+/* Search Button Style */
+.search {
+    background-color: #d971c2; /* Green background */
+    border: none; /* Remove borders */
+    color: white; /* White text */
+    padding: 10px 20px; /* Some padding */
+    text-align: center; /* Centered text */
+    text-decoration: none; /* No underline */
+    display: inline-block; /* Make the link look like a button */
+    font-size: 16px; /* Increase font size */
+    margin: 4px 2px; /* Add some margin */
+    cursor: pointer; /* Pointer/hand icon */
+    border-radius: 5px; /* Rounded corners */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+/* Hover effect */
+.search:hover {
+    background-color: #bc2b8e; /* Darker green on hover */
 }
