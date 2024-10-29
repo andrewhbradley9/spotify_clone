@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
-
+import { useParams, useNavigate, Link } from 'react-router-dom';
 const apiUrl = process.env.REACT_APP_API_URL;
-
-
 const AlbumSongs = () => {
-    const { albumId, artistId } = useParams(); // Get albumId and artistId from URL parameters
-    const navigate = useNavigate(); // Initialize useNavigate
+    const { albumId, artistId } = useParams(); 
+    const navigate = useNavigate(); 
     const [songs, setSongs] = useState([]);
     const [albumDetails, setAlbumDetails] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -16,12 +13,9 @@ const AlbumSongs = () => {
     useEffect(() => {
         const fetchAlbumAndSongs = async () => {
             try {
-                // Fetch album details including release date and total duration
-                const albumResponse = await axios.get(`${apiUrl}/targetalbum/${albumId}`);
+                const albumResponse = await axios.get(`${apiUrl}/artists/targetalbum/${albumId}`);
                 setAlbumDetails(albumResponse.data);
-
-                // Fetch songs for the album
-                const songsResponse = await axios.get(`${apiUrl}/albums/${albumId}/songs/${artistId}`);
+                const songsResponse = await axios.get(`${apiUrl}/artists/albums/${albumId}/songs/${artistId}`);
                 setSongs(songsResponse.data);
             } catch (err) {
                 setError('Error fetching album or songs');
@@ -30,18 +24,35 @@ const AlbumSongs = () => {
                 setLoading(false);
             }
         };
-
         fetchAlbumAndSongs();
     }, [albumId, artistId]);
+
     const handleGoHome = () => {
-        navigate('/'); // Navigate to the main page
+        navigate('/'); 
     };
-    // Function to format the release date
+
     const formatDate = (dateString) => {
-        if (!dateString) return 'null'; // Default to null if date is missing
+        if (!dateString) return 'null'; 
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', options).replace(',', ''); // Format and remove comma
+        return date.toLocaleDateString('en-US', options).replace(',', '');
+    };
+
+    const formatDuration = (totalSeconds) => {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        let formattedDuration = '';
+        if (hours > 0) {
+            formattedDuration += `${hours}h `;
+        }
+        if (minutes > 0 || hours > 0) {
+            formattedDuration += `${minutes}m `;
+        }
+        formattedDuration += `${seconds}s`;
+
+        return formattedDuration.trim();
     };
 
     if (loading) {
@@ -54,7 +65,7 @@ const AlbumSongs = () => {
 
     return (
         <div>
-            <button className="cancel" onClick={() => navigate(-1)}>Back to Albums</button>
+            <button className="cancel"><Link to={`/albums/${artistId}`}>Back to Albums</Link></button>
             <div><p><button className="cancel" onClick={handleGoHome}>Back to Artists</button></p></div>
             {albumDetails ? (
                 <div>
@@ -81,6 +92,9 @@ const AlbumSongs = () => {
                             <p>Genre: {song.genre_type || 'null'}</p>
                             <p>Language: {song.song_language || 'null'}</p>
                             <p>File Path: {song.file_path || 'null'}</p>
+                            <Link to={`/play/${albumId}/${song.song_id}`} className="play-button">
+                                Play Song
+                            </Link>
                         </li>
                     ))}
                 </ul>
@@ -89,24 +103,6 @@ const AlbumSongs = () => {
             )}
         </div>
     );
-};
-
-// Function to format total duration from seconds
-const formatDuration = (totalSeconds) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    let formattedDuration = '';
-    if (hours > 0) {
-        formattedDuration += `${hours}h `;
-    }
-    if (minutes > 0 || hours > 0) {
-        formattedDuration += `${minutes}m `;
-    }
-    formattedDuration += `${seconds}s`;
-
-    return formattedDuration.trim();
 };
 
 export default AlbumSongs;
