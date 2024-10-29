@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-
 const apiUrl = process.env.REACT_APP_API_URL;
-
 const Albums = () => {
     const { id: artistId } = useParams(); // Get artistId from URL parameters
     const navigate = useNavigate(); // Initialize useNavigate
@@ -88,10 +86,12 @@ const Albums = () => {
     if (error) {
         return <div>{error}</div>;
     }
-
+    const handleGoHome = () => {
+        navigate('/'); // Navigate to the main page
+    };
     return (
         <div>
-            <button className="cancel"  onClick={() => navigate(-1)}>Back To Artists</button> {/* Button to navigate back */}
+            <button className="cancel" onClick={handleGoHome}>Home</button>
             <h2>Albums by {artistName}</h2>
             {albums.length > 0 ? (
                 <ul>
