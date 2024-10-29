@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
 const apiUrl = process.env.REACT_APP_API_URL;
-
 const Add = () => {
     const [artist, setArtist] = useState({
-        artist_id: "",
         artistname: "",
         artist_bio: "",
         artist_image: "",
@@ -30,7 +27,6 @@ const Add = () => {
         
         // Convert empty fields to null
         const artistData = {
-            artist_id: artist.artist_id || null,
             artistname: artist.artistname || null,
             artist_bio: artist.artist_bio || null,
             artist_image: artist.artist_image || null,
@@ -53,7 +49,6 @@ const Add = () => {
     return (
         <div className='form'>
             <p>Add Artist</p>
-            <input type="number" placeholder='artist_id' onChange={handleChange} name="artist_id" />
             <input type="text" placeholder='artistname' onChange={handleChange} name="artistname" />
             <input type="text" placeholder='artist_bio' onChange={handleChange} name="artist_bio" />
             <input type="text" placeholder='artist_image' onChange={handleChange} name="artist_image" />
