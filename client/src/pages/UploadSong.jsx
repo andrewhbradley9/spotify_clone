@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 const apiUrl = process.env.REACT_APP_API_URL;
-
-
 const UploadSong = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -14,7 +11,6 @@ const UploadSong = () => {
     const [error, setError] = useState(null);
     const [selectedAlbumId, setSelectedAlbumId] = useState("");
     const [songData, setSongData] = useState({
-        song_id: '',
         title: '',
         songimage: '',
         duration: '',
@@ -115,14 +111,6 @@ const UploadSong = () => {
             {selectedAlbumId && (
                 <form onSubmit={handleSubmit}>
                     <h3>Upload Song</h3>
-                    <input
-                        type="text"
-                        name="song_id"
-                        placeholder="Song ID"
-                        value={songData.song_id}
-                        onChange={handleInputChange}
-                        required
-                    />
                     <input
                         type="text"
                         name="title"
