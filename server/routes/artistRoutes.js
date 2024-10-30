@@ -270,7 +270,7 @@ router.put('/:id', (req, res) => {
 //get artist via name or genre
 router.get('/search', async (req, res) => {
     const searchQuery = req.query.query; // Get the 'query' parameter from the URL
-
+    console.log(searchQuery)
     if (!searchQuery) {
         return res.status(400).json({ error: "Search query is required" });
     }
@@ -294,5 +294,38 @@ router.get('/search', async (req, res) => {
         res.status(500).json({ error: "Failed to search for artists." });
     }
 });
+
+
+router.get('/search/songname', async (req, res) => {
+    const { term } = req.query;
+
+    console.log(term)
+
+    // Check if the search term is provided and not just whitespace
+    if (!term || term.trim() === '') {
+        return res.status(400).json({ error: 'Search term is required.' });
+    }
+
+    try {
+        // Search for songs in the database using LIKE for partial matching
+        const [results] = await db.query(
+            'SELECT * FROM song WHERE title LIKE ?',
+            [`%${term.trim()}%`] // Trimmed term for searching
+        );
+
+        // Check if any results were found
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No songs found.' });
+        }
+
+        // Return the search results wrapped in an object
+        console.log(results)
+        res.json({ results });
+    } catch (error) {
+        console.error('Error searching songs:', error);
+        res.status(500).json({ error: 'Server error. Please try again later.' });
+    }
+});
+
 
 export default router;

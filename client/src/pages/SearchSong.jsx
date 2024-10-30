@@ -13,7 +13,7 @@ const SongSearch = () => {
         }
 
         try {
-            const response = await fetch(`${apiUrl}/artists/search/songname?term=${encodeURIComponent(searchTerm)}`);
+            const response = await fetch("http://localhost:3360/artists/search/songname?term=${encodeURIComponent(searchTerm)}");
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }

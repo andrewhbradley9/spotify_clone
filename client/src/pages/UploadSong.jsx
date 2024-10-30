@@ -115,14 +115,7 @@ const UploadSong = () => {
             {selectedAlbumId && (
                 <form onSubmit={handleSubmit}>
                     <h3>Upload Song</h3>
-                    <input
-                        type="text"
-                        name="song_id"
-                        placeholder="Song ID"
-                        value={songData.song_id}
-                        onChange={handleInputChange}
-                        required
-                    />
+
                     <input
                         type="text"
                         name="title"
