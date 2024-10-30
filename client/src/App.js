@@ -8,6 +8,8 @@ import Songs from "./pages/Songs";
 import PlaySong from "./pages/PlaySong";
 import SearchArtist from "./pages/SearchArtist";
 import SearchSong from "./pages/SearchSong";
+import Register from './pages/Register';
+import Login from './pages/Login';
 
 
 import "./style.css"
@@ -16,7 +18,8 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Artist/>}/>
+          <Route path="/" element={<Register/>}/>
+          <Route path="/artist" element={<Artist/>}/>
           <Route path="/add" element={<Add/>}/>
           <Route path="/update/:id" element={<Update/>}/>
           <Route path="/uploadSong/:id" element={<UploadSong/>}/>
@@ -25,6 +28,8 @@ function App() {
           <Route path="/play/:albumId/:songId" element={<PlaySong />} />
           <Route path="/search/artist" element={<SearchArtist />} />
           <Route path="/search/song" element={<SearchSong />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </BrowserRouter>
     </div>

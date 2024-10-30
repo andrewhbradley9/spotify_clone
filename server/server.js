@@ -2,9 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import cron  from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
+import authRoute from './routes/authRoute.js';
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 
 const app = express();
-const PORT = 3360;
+const PORT = process.env.PORT || 3360;
 
 // Middleware
 app.use(cors());
@@ -32,6 +38,9 @@ cron.schedule('0 0 1 * *', () => {
 });
 // Use artist routes
 app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
+
+// Use artist routes
+app.use('/auth', authRoute);
 
 // Start the server
 app.listen(PORT, () => {
