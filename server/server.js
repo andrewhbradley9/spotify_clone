@@ -42,6 +42,11 @@ app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
 // Use artist routes
 app.use('/auth', authRoute);
 
+app.get('/', (req, res) => {
+    res.send("Hello, welcome to the server!");
+});
+
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
