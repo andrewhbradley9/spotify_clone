@@ -594,5 +594,67 @@ router.put('/songs/reset-play-count', (req, res) => {
     });
 });
 
+// Route to create an album with a manually entered album_id
+router.post('/artist/:id/albums', (req, res) => {
+    const artistId = req.params.id;
+    const { album_id, album_name, release_date } = req.body;
+
+    db.query(
+        'SELECT * FROM artist WHERE artist_id = ?', [artistId],
+        (err, artistResult) => {
+            if (err) {
+                console.error("Database query failed:", err); // Log error
+                return res.status(500).json({ error: 'Database query failed' });
+            }
+
+            if (artistResult.length === 0) {
+                console.log("Artist not found:", artistId); // Log missing artist
+                return res.status(404).json({ message: 'Artist not found, cannot add album' });
+            }
+
+            // Insert the album with the manually entered album_id
+            db.query(
+                'INSERT INTO albums (album_id, artist_id, album_name, release_date) VALUES (?, ?, ?, ?)',
+                [album_id, artistId, album_name, release_date],
+                (err, result) => {
+                    if (err) {
+                        console.error("Failed to add album:", err); // Log insertion error
+                        return res.status(500).json({ error: 'Failed to add album' });
+                    }
+                    res.status(201).json({ message: 'Album added successfully', albumId: result.insertId });
+                }
+            );
+        }
+    );
+});
+
+
+
+router.delete('/albums/:id', (req, res) => {
+    const albumId = req.params.id;
+
+    db.query(
+        'SELECT * FROM albums WHERE album_id = ?', [albumId], // Corrected here
+        (err, albumResult) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database query failed' });
+            }
+
+            if (albumResult.length === 0) {
+                return res.status(404).json({ message: 'Album not found, cannot delete' });
+            }
+
+            db.query(
+                'DELETE FROM albums WHERE album_id = ?', [albumId],
+                (err, result) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Failed to delete album' });
+                    }
+                    res.status(200).json({ message: 'Album deleted successfully' });
+                }
+            );
+        }
+    );
+});
 
 export default router;

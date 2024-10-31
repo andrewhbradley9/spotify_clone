@@ -125,6 +125,7 @@ const Artist = () => {
                         <button className="delete" onClick={() => handleDelete(artist.artist_id)}>Delete</button>
                         <button className="update"><Link to={`/update/${artist.artist_id}`}>Update</Link></button>
                         <button className="upload"><Link to={`/uploadSong/${artist.artist_id}`}>Upload a Song</Link></button>
+                        <button className="uppies"><Link to={`/uploadAlbum/${artist.artist_id}`}>Upload an Album</Link></button>
                         <button className="album"><Link to={`/albums/${artist.artist_id}`}>Albums and Songs</Link></button>
                     </div>
                 ))}
