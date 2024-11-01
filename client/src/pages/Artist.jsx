@@ -62,7 +62,7 @@ const Artist = () => {
 
     return (
         <div>
-            <h1>coog_music</h1>
+            <h1>banger</h1>
             <button className="search"><Link to={`/search/artist`}>Search Artist</Link></button>
             <button className="search"><Link to={`/search/song`}>Search Song</Link></button>
             

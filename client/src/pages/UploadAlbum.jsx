@@ -33,7 +33,7 @@ const UploadAlbum = () => {
             console.log(`Posting to ${apiUrl}/artists/artist/${artistId}/albums`, albumData); // Confirm the URL and data
             await axios.post(`${apiUrl}/artists/artist/${artistId}/albums`, albumData);
             alert('Album uploaded successfully!');
-            navigate('/');
+            navigate('/artists');
         } catch (err) {
             console.error('Error uploading album:', err.response?.data || err.message);
             alert('Error uploading album.');
