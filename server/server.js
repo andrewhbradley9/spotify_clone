@@ -43,7 +43,7 @@ app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
 app.use('/auth', authRoute);
 
 app.get('/', (req, res) => {
-    res.send("Testing the updates!");
+    res.send("Checking leaf backend updates!");
 });
 
 
