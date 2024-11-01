@@ -43,7 +43,7 @@ app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
 app.use('/auth', authRoute);
 
 app.get('/', (req, res) => {
-    res.send("Hello, welcome to the server!");
+    res.send("Testing the updates!");
 });
 
 
