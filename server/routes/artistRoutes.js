@@ -591,4 +591,52 @@ router.put('/songs/reset-play-count', (req, res) => {
 });
 
 
+//new users report
+router.get('/monthly/new/users', (req, res) => {
+    const query = `
+        SELECT 
+            DATE_FORMAT(signup_date, '%Y-%m') AS month,
+            name,
+            signup_date,
+            user_id AS id
+        FROM 
+            Users
+        WHERE 
+            signup_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        ORDER BY 
+            month DESC, signup_date DESC;
+    `;
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+//monthly new subscriptions
+router.get('/monthly/subscriptions', (req, res) => {
+    const query = `
+        SELECT 
+            DATE_FORMAT(subscription_date, '%Y-%m') AS month,
+            name,
+            user_id AS id,
+            subscription_status,
+            subscription_date
+        FROM 
+            Users
+        WHERE 
+            subscription_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+            AND subscription_status = 'active'
+        ORDER BY 
+            month DESC, subscription_date DESC;
+    `;
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
 export default router;
