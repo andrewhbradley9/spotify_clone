@@ -65,7 +65,7 @@ const Artist = () => {
             <h1>coog_music</h1>
             <button className="search"><Link to={`/search/artist`}>Search Artist</Link></button>
             <button className="search"><Link to={`/search/song`}>Search Song</Link></button>
-            
+            <div><button className="fame"><Link to={`/Monthly/Reports`}>Users Wall of Fame</Link></button></div>
             <h2>Top 10 Songs</h2>
             <div className="top-songs">
                 {topSongs.length > 0 ? (
