@@ -30,7 +30,32 @@ const AlbumSongs = () => {
     const handleGoHome = () => {
         navigate('/'); 
     };
-
+    const handleLike = async (songId) => {
+        try {
+            const song = songs.find((song) => song.song_id === songId);
+            const isLiked = song.liked;
+    
+            const response = await axios.post(`${apiUrl}/artists/songs/${songId}/like`, { 
+                user_id: 1,  // Replace with actual user ID
+                like: !isLiked // Toggle like status
+            });
+    
+            if (response.data.message === (isLiked ? "Song unliked successfully!" : "Song liked successfully!")) {
+                setSongs((prevSongs) =>
+                    prevSongs.map((song) =>
+                        song.song_id === songId 
+                            ? { ...song, likes: isLiked ? song.likes - 1 : song.likes + 1, liked: !isLiked }
+                            : song
+                    )
+                );
+            } else {
+                alert(response.data.message);
+            }
+        } catch (err) {
+            console.error("Error liking/unliking the song", err);
+        }
+    };
+    
     const formatDate = (dateString) => {
         if (!dateString) return 'null'; 
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -92,6 +117,12 @@ const AlbumSongs = () => {
                             <p>Genre: {song.genre_type || 'null'}</p>
                             <p>Language: {song.song_language || 'null'}</p>
                             <p>File Path: {song.file_path || 'null'}</p>
+                            <p>Likes: {song.likes || 0}</p>
+                            <button 
+                                className={`heart-button ${song.likes ? 'liked' : ''}`} 
+                                onClick={() => handleLike(song.song_id)}
+                                aria-label={song.likes ? "Unlike" : "Like"} // for accessibility
+                            ></button>
                             <Link to={`/play/${albumId}/${song.song_id}`} className="play-button">
                                 Play Song
                             </Link>
