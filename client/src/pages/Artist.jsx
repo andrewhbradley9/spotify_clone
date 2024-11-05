@@ -4,39 +4,49 @@ import axios from 'axios';
 const apiUrl = process.env.REACT_APP_API_URL;
 const Artist = () => {
     const [artists, setArtists] = useState([]);
-    const [topSongs, setTopSongs] = useState([]); // State for top songs
-    const [topArtists, setTopArtists] = useState([]); // State for top artists
+    const [topSongs, setTopSongs] = useState([]);
+    const [topArtists, setTopArtists] = useState([]);
+    const [totalLikes, setTotalLikes] = useState({}); // Store total likes for each artist
 
     useEffect(() => {
-        // Fetch both artists, top songs, and top artists
         const fetchArtistsTopSongsAndTopArtists = async () => {
             try {
-                // Fetch artists
                 const artistRes = await axios.get(`${apiUrl}/artists`);
                 setArtists(artistRes.data);
                 
-                // Fetch top songs
                 const songRes = await axios.get(`${apiUrl}/artists/songs/top10`);
                 if (songRes.data && Array.isArray(songRes.data)) {
-                    setTopSongs(songRes.data); // Set the top songs
-                } else {
-                    console.error("Unexpected response structure for top songs:", songRes.data);
+                    setTopSongs(songRes.data);
                 }
 
-                // Fetch top artists
                 const topArtistRes = await axios.get(`${apiUrl}/artists/artists/top10`);
                 if (topArtistRes.data && Array.isArray(topArtistRes.data)) {
-                    setTopArtists(topArtistRes.data); // Set the top artists
-                } else {
-                    console.error("Unexpected response structure for top artists:", topArtistRes.data);
+                    setTopArtists(topArtistRes.data);
                 }
+                
+                // Calculate total likes for each artist
+                await calculateTotalLikesForArtists(artistRes.data);
             } catch (err) {
                 console.log("Error fetching data:", err);
             }
         };
 
         fetchArtistsTopSongsAndTopArtists();
-    }, []); // Run on mount
+    }, []);
+
+    const calculateTotalLikesForArtists = async (artists) => {
+        const likes = {};
+        for (const artist of artists) {
+            try {
+                const response = await axios.get(`${apiUrl}/artists/${artist.artist_id}/totalLikes`);
+                likes[artist.artist_id] = response.data.totalLikes; // Assuming the API returns an object like { totalLikes: number }
+            } catch (error) {
+                console.error(`Error fetching likes for artist ${artist.artist_id}:`, error);
+                likes[artist.artist_id] = 0; // Default to 0 in case of error
+            }
+        }
+        setTotalLikes(likes); // Update the state with total likes
+    };
 
     const handleDelete = async (id) => {
         try {
@@ -51,14 +61,13 @@ const Artist = () => {
     const resetPlayCount = async () => {
         try {
             const response = await axios.put(`${apiUrl}/artists/songs/reset-play-count`);
-            alert(response.data.message); // Display success message
-            window.location.reload(); // Refresh the page
+            alert(response.data.message);
+            window.location.reload();
         } catch (error) {
             console.error("Error resetting play counts:", error);
             alert("Error resetting play counts.");
         }
     };
-    
 
     return (
         <div>
@@ -98,6 +107,7 @@ const Artist = () => {
                             <p>Genre: <span>{artist.genre_type || "Unknown genre"}</span></p>
                             <p>Followers: <span>{artist.follower_count > 0 ? artist.follower_count : "No followers"}</span></p>
                             <p>{artist.is_verified ? "Verified Artist" : "Not Verified"}</p>
+                            <p>Total Likes: <span>{totalLikes[artist.artist_id] || 0}</span></p> {/* Display total likes */}
                             <button className="album"><Link to={`/albums/${artist.artist_id}`}>Albums and Songs</Link></button>
                         </div>
                     ))
@@ -122,6 +132,7 @@ const Artist = () => {
                         <p>Genre: <span>{artist.genre_type || "Unknown genre"}</span></p>
                         <p>Followers: <span>{artist.follower_count > 0 ? artist.follower_count : "No followers"}</span></p>
                         <p>{artist.is_verified ? "Verified Artist" : "Not Verified"}</p>
+                        <p>Total Likes: <span>{totalLikes[artist.artist_id] || 0}</span></p> {/* Display total likes */}
                         <button className="delete" onClick={() => handleDelete(artist.artist_id)}>Delete</button>
                         <button className="update"><Link to={`/update/${artist.artist_id}`}>Update</Link></button>
                         <button className="upload"><Link to={`/uploadSong/${artist.artist_id}`}>Upload a Song</Link></button>
@@ -136,7 +147,6 @@ const Artist = () => {
                 </button>
             </p>
 
-            {/* Button to reset play counts */}
             <button className="reset-play-count" onClick={resetPlayCount}>
                 Reset Play Counts for the Month
             </button>
