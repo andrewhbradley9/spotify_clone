@@ -705,5 +705,33 @@ router.post("/songs/:songId/like", (req, res) => {
     });
 });
 
+// Get a song's likes by song_id
+router.get('/song-likes/:song_id', (req, res) => {
+    const songId = req.params.song_id;
+  
+    // SQL query to get song likes
+    const query = `
+      SELECT song.likes
+      FROM song
+      JOIN albums ON song.album_id = albums.album_id
+      JOIN artist ON albums.artist_id = artist.artist_id
+      WHERE song.song_id = ?;
+    `;
+  
+    // Execute query with songId as parameter
+    db.execute(query, [songId], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+  
+      if (results.length > 0) {
+        // Return the song's details if found
+        res.json(results[0]);
+      } else {
+        // If no song found
+        res.status(404).json({ message: 'Song not found' });
+      }
+    });
+  });
 
 export default router;
