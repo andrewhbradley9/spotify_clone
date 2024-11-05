@@ -590,7 +590,6 @@ router.put('/songs/reset-play-count', (req, res) => {
     });
 });
 
-
 //new users report
 router.get('/monthly/new/users', (req, res) => {
     const query = `
@@ -638,5 +637,35 @@ router.get('/monthly/subscriptions', (req, res) => {
         res.json(results);
     });
 });
+
+/// Get total likes for an artist
+router.get('/:artistId/totalLikes', (req, res) => {
+    const artistId = req.params.artistId;
+
+    // SQL query to count total likes for an artist's songs
+    const query = `
+        SELECT COUNT(likes.like_id) AS totalLikes
+        FROM likes
+        INNER JOIN song ON likes.Song_id = song.song_id
+        INNER JOIN albums ON song.album_id = albums.album_id
+        WHERE albums.artist_id = ?`;
+
+    // Execute the query
+    db.query(query, [artistId], (err, results) => {
+        if (err) {
+            console.error('Error executing total likes query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Check if results are returned
+        if (results.length > 0) {
+            res.json({ totalLikes: results[0].totalLikes });
+        } else {
+            res.json({ totalLikes: 0 }); // No likes found for the artist
+        }
+    });
+});
+
+
 
 export default router;
