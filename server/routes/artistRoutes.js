@@ -666,6 +666,44 @@ router.get('/:artistId/totalLikes', (req, res) => {
     });
 });
 
+router.post("/songs/:songId/like", (req, res) => {
+    const { songId } = req.params;
+    const userId = req.body.user_id; // get user_id from request body for tracking
+
+    // Check if the user has already liked the song
+    const checkQuery = `SELECT * FROM likes WHERE User_id = ? AND Song_id = ?`;
+    db.query(checkQuery, [userId, songId], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error while checking likes." });
+
+        if (results.length > 0) {
+            // User has already liked the song, so we perform an "unlike" operation
+            const deleteLike = `DELETE FROM likes WHERE User_id = ? AND Song_id = ?`;
+            db.query(deleteLike, [userId, songId], (err) => {
+                if (err) return res.status(500).json({ error: "Database error while removing like." });
+
+                // Decrement like_count in the song table
+                const decrementQuery = `UPDATE song SET likes = likes - 1 WHERE song_id = ?`;
+                db.query(decrementQuery, [songId], (err) => {
+                    if (err) return res.status(500).json({ error: "Database error while updating like count." });
+                    res.json({ message: "Song unliked successfully!" });
+                });
+            });
+        } else {
+            // User has not liked the song, so we proceed with a "like" operation
+            const insertLike = `INSERT INTO likes (User_id, Song_id) VALUES (?, ?)`;
+            db.query(insertLike, [userId, songId], (err) => {
+                if (err) return res.status(500).json({ error: "Database error while inserting like." });
+
+                // Increment like_count in the song table
+                const incrementQuery = `UPDATE song SET likes = likes + 1 WHERE song_id = ?`;
+                db.query(incrementQuery, [songId], (err) => {
+                    if (err) return res.status(500).json({ error: "Database error while updating like count." });
+                    res.json({ message: "Song liked successfully!" });
+                });
+            });
+        }
+    });
+});
 
 
 export default router;
