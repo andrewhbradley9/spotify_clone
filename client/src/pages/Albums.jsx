@@ -102,6 +102,7 @@ const Albums = () => {
                             </Link>
                             <p>Release Date: {formatDate(album.release_date)}</p>
                             <p>Total Duration: {formatDuration(album.totalDuration)}</p> {/* Display total duration */}
+                            <p>Total Likes: {album.songs.reduce((total, song) => total + (song.likes || 0), 0)}</p> {/* Calculate and display total likes */}
                         </li>
                     ))}
                 </ul>
