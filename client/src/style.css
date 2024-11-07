@@ -189,3 +189,119 @@ input {
 .search:hover {
     background-color: #bc2b8e; /* Darker green on hover */
 }
+
+
+/* Styles for the Monthly Reports Component */
+.monthly-reports {
+    padding: 20px;
+    background-color: #9eaeff; /* Light background color for better readability */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    max-width: 800px; /* Max width for the report section */
+    margin: 20px auto; /* Center the report on the page */
+}
+
+/* Styles for the Wall of Fame heading */
+.monthly-reports h1 {
+    font-size: 2.5em; /* Increase font size */
+    color: #ffcf55; /* Gold color for the glow effect */
+    text-shadow: 
+        0 0 5px rgba(255, 157, 0, 0.7), /* Light glow */
+        0 0 10px rgba(242, 255, 0, 0.5), /* Medium glow */
+        0 0 15px rgba(255, 102, 0, 0.3); /* Stronger glow */
+}
+
+/* Styles for report sections resembling a gold plate */
+.report-section {
+    margin-bottom: 20px; /* Space between sections */
+    padding: 15px; /* Padding inside each section */
+    background: linear-gradient(145deg, #f7e5a5, #ffdb27); /* Gradient background for a gold plate look */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), /* Darker shadow for depth */
+                -5px -5px 10px rgba(255, 255, 255, 0.5); /* Light shadow for a shiny effect */
+    border: 1px solid #e5c56b; /* Slightly darker border to enhance the gold look */
+}
+
+/* Optional: Hover effect for interaction */
+.report-section:hover {
+    box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.3), /* Darker shadow on hover */
+                -6px -6px 15px rgba(255, 255, 255, 0.7); /* Light shadow on hover */
+}
+
+/* Styles for the month group headers */
+.report-group {
+    margin-top: 10px; /* Space above each month group */
+}
+
+/* Styles for lists of users and subscriptions */
+.report-section ul {
+    list-style-type: none; /* Remove default bullet points */
+    padding: 0; /* Remove default padding */
+}
+
+.report-section li {
+    padding: 8px 0; /* Space between list items */
+    border-bottom: 1px solid #d8d1d1; /* Light line between items */
+    font-size: 1.2em; /* Increased font size for user names */
+    font-weight: bold; /* Make the font thicker */
+    color: #bb8000; /* Darker color for list items for better readability */
+}
+
+/* Styles for error messages */
+.error {
+    color: red; /* Red color for error messages */
+    font-weight: bold; /* Bold text for emphasis */
+}
+
+/* Styles for the Fame button */
+.fame {
+    background: linear-gradient(145deg, #ffc342, #fff09d); /* Bright gold gradient */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    color: #fff; /* White text color */
+    font-size: 1.2em; /* Font size */
+    padding: 10px 20px; /* Padding for the button */
+    cursor: pointer; /* Pointer cursor on hover */
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), /* Dark shadow for depth */
+                -4px -4px 8px rgba(255, 255, 255, 0.5); /* Light shadow for shine */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Subtle text shadow */
+}
+
+/* Hover effect for the Fame button */
+.fame:hover {
+    background: linear-gradient(145deg, #ffbb32, #ffee7e); /* Reverse gradient on hover */
+    box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.3), /* Darker shadow on hover */
+                -6px -6px 15px rgba(255, 255, 255, 0.7); /* Light shadow on hover */
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.heart-button {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+    transition: transform 0.2s ease;
+}
+
+/* Default empty heart (unliked state) */
+.heart-button::before {
+    content: "♡"; /* Empty heart symbol */
+    color: black; /* Default color for unliked state */
+    font-size: 32px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    text-align: center;
+    line-height: 32px;
+}
+
+/* Filled heart when liked */
+.heart-button.liked::before {
+    content: "♥"; /* Filled heart symbol */
+    color: black; /* Filled heart color */
+}
