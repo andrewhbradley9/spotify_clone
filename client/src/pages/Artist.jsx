@@ -30,6 +30,8 @@ const Artist = () => {
                 } else {
                     console.error("Unexpected response structure for top artists:", topArtistRes.data);
                 }
+                // Calculate total likes for each artist
+                await calculateTotalLikesForArtists(artistRes.data);
             } catch (err) {
                 console.log("Error fetching data:", err);
             }
@@ -38,6 +40,20 @@ const Artist = () => {
         fetchArtistsTopSongsAndTopArtists();
     }, []); // Run on mount
 
+        const calculateTotalLikesForArtists = async (artists) => {
+        const likes = {};
+        for (const artist of artists) {
+            try {
+                const response = await axios.get(`http://localhost:3360/artists/${artist.artist_id}/totalLikes`);
+                likes[artist.artist_id] = response.data.totalLikes; // Assuming the API returns an object like { totalLikes: number }
+            } catch (error) {
+                console.error(`Error fetching likes for artist ${artist.artist_id}:`, error);
+                likes[artist.artist_id] = 0; // Default to 0 in case of error
+            }
+        }
+        setTotalLikes(likes); // Update the state with total likes
+    };
+    
     const handleDelete = async (id) => {
         try {
             await axios.delete(`${apiUrl}/artists/${id}`);
@@ -98,6 +114,7 @@ const Artist = () => {
                             <p>Genre: <span>{artist.genre_type || "Unknown genre"}</span></p>
                             <p>Followers: <span>{artist.follower_count > 0 ? artist.follower_count : "No followers"}</span></p>
                             <p>{artist.is_verified ? "Verified Artist" : "Not Verified"}</p>
+                            <p>Total Likes: <span>{totalLikes[artist.artist_id] || 0}</span></p> {/* Display total likes */}
                             <button className="album"><Link to={`/albums/${artist.artist_id}`}>Albums and Songs</Link></button>
                         </div>
                     ))
@@ -122,6 +139,7 @@ const Artist = () => {
                         <p>Genre: <span>{artist.genre_type || "Unknown genre"}</span></p>
                         <p>Followers: <span>{artist.follower_count > 0 ? artist.follower_count : "No followers"}</span></p>
                         <p>{artist.is_verified ? "Verified Artist" : "Not Verified"}</p>
+                        <p>Total Likes: <span>{totalLikes[artist.artist_id] || 0}</span></p> {/* Display total likes */}
                         <button className="delete" onClick={() => handleDelete(artist.artist_id)}>Delete</button>
                         <button className="update"><Link to={`/update/${artist.artist_id}`}>Update</Link></button>
                         <button className="upload"><Link to={`/uploadSong/${artist.artist_id}`}>Upload a Song</Link></button>
