@@ -657,4 +657,147 @@ router.delete('/albums/:id', (req, res) => {
     );
 });
 
+//new users report
+router.get('/monthly/new/users', (req, res) => {
+    const query = `
+        SELECT 
+            DATE_FORMAT(signup_date, '%Y-%m') AS month,
+            name,
+            signup_date,
+            user_id AS id
+        FROM 
+            Users
+        WHERE 
+            signup_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        ORDER BY 
+            month DESC, signup_date DESC;
+    `;
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+//monthly new subscriptions
+router.get('/monthly/subscriptions', (req, res) => {
+    const query = `
+        SELECT 
+            DATE_FORMAT(subscription_date, '%Y-%m') AS month,
+            name,
+            user_id AS id,
+            subscription_status,
+            subscription_date
+        FROM 
+            Users
+        WHERE 
+            subscription_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+            AND subscription_status = 'active'
+        ORDER BY 
+            month DESC, subscription_date DESC;
+    `;
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+/// Get total likes for an artist
+router.get('/:artistId/totalLikes', (req, res) => {
+    const artistId = req.params.artistId;
+
+    // SQL query to count total likes for an artist's songs
+    const query = `
+        SELECT COUNT(likes.like_id) AS totalLikes
+        FROM likes
+        INNER JOIN song ON likes.Song_id = song.song_id
+        INNER JOIN albums ON song.album_id = albums.album_id
+        WHERE albums.artist_id = ?`;
+
+    // Execute the query
+    db.query(query, [artistId], (err, results) => {
+        if (err) {
+            console.error('Error executing total likes query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Check if results are returned
+        if (results.length > 0) {
+            res.json({ totalLikes: results[0].totalLikes });
+        } else {
+            res.json({ totalLikes: 0 }); // No likes found for the artist
+        }
+    });
+});
+
+router.post("/songs/:songId/like", (req, res) => {
+    const { songId } = req.params;
+    const userId = req.body.user_id; // get user_id from request body for tracking
+
+    // Check if the user has already liked the song
+    const checkQuery = `SELECT * FROM likes WHERE User_id = ? AND Song_id = ?`;
+    db.query(checkQuery, [userId, songId], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error while checking likes." });
+
+        if (results.length > 0) {
+            // User has already liked the song, so we perform an "unlike" operation
+            const deleteLike = `DELETE FROM likes WHERE User_id = ? AND Song_id = ?`;
+            db.query(deleteLike, [userId, songId], (err) => {
+                if (err) return res.status(500).json({ error: "Database error while removing like." });
+
+                // Decrement like_count in the song table
+                const decrementQuery = `UPDATE song SET likes = likes - 1 WHERE song_id = ?`;
+                db.query(decrementQuery, [songId], (err) => {
+                    if (err) return res.status(500).json({ error: "Database error while updating like count." });
+                    res.json({ message: "Song unliked successfully!" });
+                });
+            });
+        } else {
+            // User has not liked the song, so we proceed with a "like" operation
+            const insertLike = `INSERT INTO likes (User_id, Song_id) VALUES (?, ?)`;
+            db.query(insertLike, [userId, songId], (err) => {
+                if (err) return res.status(500).json({ error: "Database error while inserting like." });
+
+                // Increment like_count in the song table
+                const incrementQuery = `UPDATE song SET likes = likes + 1 WHERE song_id = ?`;
+                db.query(incrementQuery, [songId], (err) => {
+                    if (err) return res.status(500).json({ error: "Database error while updating like count." });
+                    res.json({ message: "Song liked successfully!" });
+                });
+            });
+        }
+    });
+});
+
+// Get a song's likes by song_id
+router.get('/song-likes/:song_id', (req, res) => {
+    const songId = req.params.song_id;
+  
+    // SQL query to get song likes
+    const query = `
+      SELECT song.likes
+      FROM song
+      JOIN albums ON song.album_id = albums.album_id
+      JOIN artist ON albums.artist_id = artist.artist_id
+      WHERE song.song_id = ?;
+    `;
+  
+    // Execute query with songId as parameter
+    db.execute(query, [songId], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+  
+      if (results.length > 0) {
+        // Return the song's details if found
+        res.json(results[0]);
+      } else {
+        // If no song found
+        res.status(404).json({ message: 'Song not found' });
+      }
+    });
+  });
 export default router;
