@@ -3,11 +3,21 @@ import express from 'express';
 import mysql2 from 'mysql2';
 import multer from 'multer';
 
+
+import { authenticateToken } from './authMiddleware.js';
+import checkRole from './checkRole.js'; // Assuming checkRole is a middleware function for role checking
+
 const router = express.Router();
 
 // Create a MySQL connection pool
 import dotenv from 'dotenv';
 dotenv.config();
+
+
+// Artist-only route
+router.get('/dashboard', authenticateToken, checkRole('artist'), (req, res) => {
+    res.json({ message: 'Welcome to the artist dashboard!' });
+});
 
 // database connection setup
 const db = mysql2.createPool({

@@ -2,6 +2,8 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import mysql2 from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
+import { authenticateToken } from './authMiddleware.js';
+import checkRole from './checkRole.js';
 
 
 const router = express.Router();
@@ -18,6 +20,21 @@ const db = mysql2.createPool({
     database: process.env.DB_NAME, 
 });
 
+
+
+// Example: Protect an artist-only route
+router.get('/artist-only', authenticateToken(['artist']), (req, res) => {
+    res.json({ message: 'Welcome, artist!' });
+});
+
+// Example: Protect an admin-only route
+router.get('/admin-only', authenticateToken(['admin']), (req, res) => {
+    res.json({ message: 'Welcome, admin!' });
+});
+
+router.get('/listener-only', authenticateToken(['listener']), (req, res) => {
+    res.json({ message: 'Welcome, listener!' });
+});
 
 // Register endpoint
 router.post('/register', async (req, res) => {

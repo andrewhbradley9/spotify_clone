@@ -11,6 +11,7 @@ import SearchSong from "./pages/SearchSong";
 import Register from './pages/Register';
 import Login from './pages/Login';
 import UploadAlbum from "./pages/UploadAlbum";
+import ArtistWelcomePage from "./pages/ArtistWelcome";
 
 
 import "./style.css"
@@ -21,6 +22,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Register/>}/>
           <Route path="/artist" element={<Artist/>}/>
+          <Route path="/artist-welcome" element={<ArtistWelcomePage/>}/>
           <Route path="/add" element={<Add/>}/>
           <Route path="/update/:id" element={<Update/>}/>
           <Route path="/uploadSong/:id" element={<UploadSong/>}/>

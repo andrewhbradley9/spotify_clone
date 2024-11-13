@@ -3,6 +3,7 @@ import cors from 'cors';
 import cron  from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
 import authRoute from './routes/authRoute.js';
+import adminRoute from './routes/adminRoute.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -41,6 +42,11 @@ app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
 
 // Use artist routes
 app.use('/auth', authRoute);
+
+
+app.use('/admin', authRoute);
+
+app.use('/listener', artistRoutes); 
 
 app.get('/', (req, res) => {
     res.send("Backend if finally CI/CD");

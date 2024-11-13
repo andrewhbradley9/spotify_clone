@@ -1,27 +1,19 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const mysql = require('mysql2/promise');
-const router = express.Router();
-const jwt = require('jsonwebtoken');
-
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-// database connection setup
+// database connection setup (if needed)
+import mysql2 from 'mysql2/promise';
 const db = mysql2.createPool({
-    host: process.env.DB_HOST,  
-    user: process.env.DB_USER,       
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME, 
+    database: process.env.DB_NAME,
 });
 
-
-
-// authMiddleware.js
-const jwt = require('jsonwebtoken');
-
-// Middleware function to authenticate JWT
-const authenticateToken = (req, res, next) => {
+// Define the authenticateToken middleware
+export const authenticateToken = (roles = []) => (req, res, next) => {
     const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1];
 
     if (!token) {
@@ -34,8 +26,12 @@ const authenticateToken = (req, res, next) => {
         }
 
         req.user = user; // Attach user info to request
+
+        // Check if the user role is allowed to access this route
+        if (roles.length && !roles.includes(user.role)) {
+            return res.sendStatus(403); // Forbidden
+        }
+
         next(); // Proceed to the next middleware/route handler
     });
 };
-
-module.exports = authenticateToken;
