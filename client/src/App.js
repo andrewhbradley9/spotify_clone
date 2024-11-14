@@ -11,6 +11,7 @@ import SearchSong from "./pages/SearchSong";
 import Register from './pages/Register';
 import Login from './pages/Login';
 import UploadAlbum from "./pages/UploadAlbum";
+import Regi from './pages/Regi';
 
 
 import "./style.css"
@@ -30,8 +31,9 @@ function App() {
           <Route path="/play/:albumId/:songId" element={<PlaySong />} />
           <Route path="/search/artist" element={<SearchArtist />} />
           <Route path="/search/song" element={<SearchSong />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/Register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Regi />} />
         </Routes>
       </BrowserRouter>
     </div>

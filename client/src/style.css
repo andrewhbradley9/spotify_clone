@@ -1,191 +1,361 @@
-.App {
-    height: 100vh; /* Full viewport height */
-    padding: 20px; /* Adjusted padding for better layout */
+/* General Styles */
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #151515;
+    color: #ffffff;
+    line-height: 1.6;
+  }
+  
+  a {
+    color: #ff0000;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    color: #ffffff;
+  }
+  
+  h1, h2 {
+    margin: 20px 0;
+    color: #151515;
+  }
+  
+  /* Paragraph Styling */
+  p {
+    color: gray; 
+    font-size: 14px; 
+    margin-top: 10px; 
+    text-align: center; 
+    font-style: italic;
+  }
+  
+  /* Link Styling Inside Paragraph */
+  p a {
+    color: #ff0000;
+    text-decoration: underline;
+    font-weight: bold;
+  }
+  
+  p a:hover {
+    color: #b30000; 
+    text-decoration: none;
+  }
+  
+  
+  /* Header Styles */
+  .header {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    justify-content: flex-start; /* Aligns content to the top */
+    padding: 20px 40px;
+    background-color: #151515;
+    border-bottom: 1px solid #343434;
+  }
+  
+  .logo {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ff0000;
+  }
+  
+  .nav {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .nav-btn {
+    border: 1px solid #343434;
+    background-color: transparent;
+    color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .nav-btn:hover {
+    background-color: #ff0000;
+  }
+  
+  /* Hero Section */
+  .hero {
     text-align: center;
-    background: linear-gradient(to bottom right, #40d04c, #3ea8cf); /* Gradient background */
-}
-
-h1 {
-    color: #3e2723; /* Dark brown for title */
-    margin-bottom: 20px; /* Space below title */
-}
-
-.artists, .top-artists { /* Apply the same styles to both classes */
-    display: flex;
-    flex-wrap: wrap; /* Allow wrapping for better responsiveness */
-    justify-content: center; /* Center the artist cards */
-    gap: 20px; /* Space between artist cards */
-}
-
-.artist {
-    flex: 1 1 200px;
-    max-width: 250px; /* Limit the maximum width of artist cards */
+    padding: 100px 20px; 
+    background-image: url('/public/background1.jpg');
+    background-size: cover;
+    background-repeat: no-repeat; 
+    background-position: center; 
+    min-height: 100vh; 
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border: 1px solid #ccc; /* Light gray border */
-    border-radius: 8px; /* Rounded corners */
-    background-color: rgba(255, 255, 255, 0.8); /* Slightly transparent white */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
-}
-
-img {
-    width: 200px;
-    height: 300px;
-    object-fit: cover;
-    border-radius: 8px; /* Rounded corners for images */
-}
-
-/* Button styles omitted for brevity */
-
-.delete {
+    color: #ffffff;
+  }
+  
+  
+  .hero p {
+    font-size: 18px;
+    margin-bottom: 29px; 
+    color: #d3d3d3;
+    font-style: italic;
+  }
+  
+  .hero-btn {
+    background-color: #ff0000;
+    color: #ffffff;
+    padding: 12px 24px;
+    font-size: 16px;
     border: none;
-    padding: 6px 12px;
-    background-color: #f8d7da; /* Light red background */
+    border-radius: 5px;
     cursor: pointer;
-    border: 1px solid rgb(245, 191, 191);
-    color: rgb(242, 100, 100);
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth hover transition */
-}
-
-.delete:hover {
-    background-color: rgb(242, 100, 100); /* Darker red on hover */
-    color: white; /* White text on hover */
-}
-
-.update {
+    transition: background-color 0.3s ease;
+  }
+  
+  .hero-btn:hover {
+    background-color: #680000;
+  }
+  
+  
+  /* Search Section */
+  .search-section {
+    text-align: center;
+    margin: 30px 0;
+  }
+  
+  .search-input {
+    width: 65%;
+    padding: 12px;
+    border: 1px solid #343434;
+    border-radius: 5px;
+    background-color: #343434;
+    color: #ffffff;
+  }
+  
+  .search-btn {
+    margin-left: 10px;
+    background-color: #ff0000;
+    color: #ffffff;
+    padding: 12px 20px;
     border: none;
-    padding: 6px 12px;
-    background-color: #d1e7dd; /* Light green background */
+    border-radius: 5px;
     cursor: pointer;
-    border: 1px solid rgb(204, 204, 243);
-    color: rgb(139, 139, 234);
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth hover transition */
-}
-
-.update:hover {
-    background-color: rgb(139, 139, 234); /* Darker blue on hover */
-    color: white; /* White text on hover */
-}
-
-.form {
+  }
+  
+  .search-btn:hover {
+    background-color: #680000;
+  }
+  
+  /* Trending Section */
+  .trending {
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #151515;
+    color: #ffffff;
+  }
+  
+  .trending h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #ff0000;
+  }
+  
+  .trending-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    justify-items: center;
+  }
+  
+  .thumbnail {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .thumbnail img {
+    width: 100%;
+    height: auto;
+  }
+  
+  .thumbnail-title {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-align: center;
+    width: 90%;
+  }
+  
+  @media (max-width: 768px) {
+    .thumbnail-title {
+      font-size: 12px;
+      padding: 4px;
+    }
+  }
+  
+  /* Creator Section */
+  .creator-section {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #343434;
+    color: #ffffff;
+  }
+  
+  .creator-section h2 {
+    color: #ff0000;
+    margin-bottom: 20px;
+  }
+  
+  .creator-section p {
+    margin-bottom: 30px;
+    color: #d3d3d3;
+  }
+  
+  .creator-btn {
+    background-color: transparent;
+    border: 1px solid #ffffff;
+    padding: 12px 20px;
+    color: #ffffff;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .creator-btn:hover {
+    background-color: #680000;
+    border-color: #680000;
+  }
+  
+  /* Login and Register Pages */
+  .login-page, .register-page {
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-top: 30px; /* Space above the form */
-}
-
-input {
-    width: 250px;
+  }
+  
+  .login-page {
+    background-image: url('/public/background1.jpg');    
+  }
+  
+  .register-page {
+    background-image: url('/public/background2.jpg');
+  }
+  
+  .login-container, .register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    padding: 20px;
+  }
+  
+  .form-container {
+    width: 100%;
+    max-width: 400px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    text-align: center;
+  }
+  
+  form label {
+    color: #000000;
+    font-weight: bold;
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+  }
+  
+  form input {
+    width: 100%;
     padding: 10px;
-    border: 1px solid gray;
-    border-radius: 4px; /* Rounded corners */
-    font-size: 16px; /* Increased font size */
-}
-
-.formButton {
-    border: none;
-    padding: 10px;
-    background-color: rgb(244, 142, 74);
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #343434;
     color: white;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth hover transition */
-}
-
-.formButton:hover {
-    background-color: rgb(202, 118, 59); /* Darker orange on hover */
-}
-
-.cancel {
     border: none;
-    padding: 10px 20px; /* Increased padding for better size */
-    background-color: #f8d7da; /* Light red background */
-    color: #721c24; /* Darker red text */
-    font-weight: bold;
+    border-radius: 5px;
     cursor: pointer;
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s, color 0.3s; /* Smooth hover transition */
-    font-size: 16px; /* Increased font size */
-}
-
-.cancel:hover {
-    background-color: #f5c6cb; /* Slightly darker red on hover */
-    color: white; /* White text on hover */
-}
-
-.upload {
-    border: none;
-    padding: 10px 20px; /* Increased padding for better size */
-    background-color: #fdee6a; /* Green background */
-    color: white; /* White text */
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth hover transition */
-}
-
-.upload:hover {
-    background-color: #ffde68; /* Darker green on hover */
-}
-
-.album {
-    border: none;
-    padding: 10px 20px; /* Increased padding for better size */
-    background-color: #7abded; /* Blue background */
-    color: white; /* White text */
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth hover transition */
-}
-
-.album:hover {
-    background-color: #549ec6; /* Darker blue on hover */
-}
-
-.add{
-    border: none;
-    padding: 10px 20px; /* Increased padding for better size */
-    background-color: #c9a2ff; /* Coral background */
-    color: white; /* White text */
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth hover transition */
-    font-size: 16px; /* Increased font size */
-}
-
-.add:hover {
-    background-color: #8768b9; /* Darker coral on hover */
-}
-
-/* Search Button Style */
-.search {
-    background-color: #d971c2; /* Green background */
-    border: none; /* Remove borders */
-    color: white; /* White text */
-    padding: 10px 20px; /* Some padding */
-    text-align: center; /* Centered text */
-    text-decoration: none; /* No underline */
-    display: inline-block; /* Make the link look like a button */
-    font-size: 16px; /* Increase font size */
-    margin: 4px 2px; /* Add some margin */
-    cursor: pointer; /* Pointer/hand icon */
-    border-radius: 5px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth transition for hover effect */
-}
-
-/* Hover effect */
-.search:hover {
-    background-color: #bc2b8e; /* Darker green on hover */
-}
+  }
+  
+  form button:hover {
+    background-color: #504646;
+  }
+  
+  p a {
+    color: #ff0000;
+    text-decoration: underline;
+  }
+  
+  p a:hover {
+    color: #b30000;
+  }
+  
+  /* Footer Styles */
+  .footer {
+    background-color: #151515;
+    color: #ffffff;
+    padding: 40px 20px;
+  }
+  
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .footer-section {
+    flex: 1 1 200px;
+    margin-bottom: 20px;
+  }
+  
+  .footer-section h4 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #ff0000;
+  }
+  
+  .footer-section ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .footer-section ul li {
+    margin-bottom: 8px;
+  }
+  
+  .footer-section ul li a {
+    color: #ffffff;
+  }
+  
+  .footer-section ul li a:hover {
+    color: #ff0000;
+  }
+  
+  .footer-bottom {
+    text-align: center;
+    margin-top: 20px;
+    border-top: 1px solid #343434;
+    padding-top: 10px;
+  }
+  
