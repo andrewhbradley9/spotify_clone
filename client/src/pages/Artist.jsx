@@ -53,7 +53,7 @@ const Artist = () => {
     //     }
     // };
 
-    const resetPlayCount = async () => {
+    /* const resetPlayCount = async () => {
         try {
             const response = await axios.put(`${apiUrl}/artists/songs/reset-play-count`);
             alert(response.data.message); // Display success message
@@ -63,7 +63,7 @@ const Artist = () => {
             alert("Error resetting play counts.");
         }
     };
-
+*/
     const handleSearch = async (e) => {
         const term = e.target.value;
         setSearchTerm(term);
@@ -218,9 +218,9 @@ const Artist = () => {
                             <Link to="/add">Add new Artist</Link>
                         </button>
                         
-                        <button className="reset-play-count" onClick={resetPlayCount}>
+                       {/* <button className="reset-play-count" onClick={resetPlayCount}>
                             Reset Play Counts for the Month
-                        </button>
+                                    </button>  */}
                     </div>
                 </>
             )}

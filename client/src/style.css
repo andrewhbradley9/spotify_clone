@@ -107,7 +107,7 @@ img {
 }
 
 /* Button styles */
-.formButton, .delete, .update, .upload, .album, .add, .search, .login, .reset-play-count, .uppies {
+.formButton, .delete, .update, .upload, .album, .add, .search, .login, /*.reset-play-count,*/ .uppies {
     padding: 12px 24px;
     border: none;
     border-radius: 20px;
@@ -123,12 +123,12 @@ img {
 
 .formButton:hover, .delete:hover, .update:hover, .upload:hover, 
 .album:hover, .add:hover, .search:hover, .login:hover, 
-.reset-play-count:hover, .uppies:hover {
+/* .reset-play-count:hover, */ .uppies:hover {
     background: #680000;
     transform: translateY(-2px);
 }
 
-/* Special styling for reset play count button */
+/* Special styling for reset play count button 
 .reset-play-count {
     display: block;
     margin: 30px auto;
@@ -137,6 +137,7 @@ img {
     background: #FF0000;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
+*/
 
 /* Form styles */
 .form {
