@@ -4,6 +4,7 @@ import cron  from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
 import authRoute from './routes/authRoute.js';
 import songRoutes from './routes/songRoutes.js'; // New import
+
 //add multer and path
 import multer from 'multer';
 import path from 'path';
@@ -53,7 +54,7 @@ app.use('/auth', authRoute);
 app.use('/song', songRoutes); // Use the song routes
 
 app.get('/', (req, res) => {
-    res.send("Backend if finally CI/CD");
+    res.send("Backend if finally CI/CD + andrew testing hehe");
 });
 
 
