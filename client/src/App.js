@@ -4,7 +4,7 @@ import Add from "./pages/Add";
 import Update from "./pages/Update";
 import UploadSong from "./pages/UploadSong";
 import Songs from "./pages/Songs";
-import PlaySong from "./pages/PlaySong";
+// import PlaySong from "./pages/PlaySong";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import UploadAlbum from "./pages/UploadAlbum";

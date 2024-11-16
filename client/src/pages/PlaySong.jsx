@@ -5,7 +5,7 @@ const apiUrl = process.env.REACT_APP_API_URL;
 const PlaySong = () => {
     const { songId, albumId } = useParams(); // Get songId and albumId from params
     const audioSrc = `${apiUrl}/artists/play/${albumId}/${songId}`;
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     // const handleGoHome = () => {
     //     navigate('/'); // Navigate to the main page
