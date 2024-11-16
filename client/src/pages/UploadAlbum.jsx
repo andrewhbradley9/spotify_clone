@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; //change
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -8,17 +8,14 @@ const UploadAlbum = () => {
     const { id: artistId } = useParams();
     const navigate = useNavigate();
     const [albumData, setAlbumData] = useState({
-        album_id: '',
         album_name: '',
         release_date: '',
-        album_image: null //change
     });
-    //change begin
-    const [imagePreview, setImagePreview] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        // If we have an albumId in the URL, we're updating
         const albumId = window.location.pathname.split('/').pop();
         if (albumId !== artistId) {
             setIsUpdating(true);
@@ -27,25 +24,19 @@ const UploadAlbum = () => {
     }, [artistId]);
 
     const fetchAlbumData = async (albumId) => {
+        setLoading(true);
+        console.log('Fetching album data for ID:', albumId); // Debug log
         try {
             const response = await axios.get(`${apiUrl}/artists/targetalbum/${albumId}`);
+            console.log('Album data received:', response.data); // Debug log
             setAlbumData(response.data);
-            if (response.data.album_image) {
-                setImagePreview(`${apiUrl}${response.data.album_image}`);
-            }
         } catch (err) {
             console.error('Error fetching album:', err);
+            setError('Error fetching album data.');
+        } finally {
+            setLoading(false);
         }
     };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setAlbumData(prev => ({ ...prev, album_image: file }));
-            setImagePreview(URL.createObjectURL(file));
-        }
-    };
-    //change end
 
     const handleGoHome = () => {
         navigate('/artist');
@@ -53,62 +44,66 @@ const UploadAlbum = () => {
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
-        setAlbumData(prevState => ({
+        console.log(`Updating ${name}:`, value); // Debug log
+        setAlbumData((prevState) => ({
             ...prevState,
-            [name]: value
+            [name]: value,
         }));
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        const formData = new FormData();
-        
-        Object.keys(albumData).forEach(key => {
-            if (key === 'album_image' && typeof albumData[key] === 'string') return;
-            formData.append(key, albumData[key]);
-        });
+
+        // Debugging state before submission
+        console.log('Album data before submission:', albumData);
 
         try {
+            // Ensure release_date is formatted as YYYY-MM-DD
+            const formattedData = {
+                ...albumData,
+                release_date: new Date(albumData.release_date).toISOString().split('T')[0],
+            };
+
+            console.log('Payload being sent to backend:', formattedData);
+
             if (isUpdating) {
-                await axios.put(`${apiUrl}/artists/albums/${albumData.album_id}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                // Update existing album
+                console.log('Updating album:', albumData.album_id); // Debug log
+                await axios.put(`${apiUrl}/artists/albums/${albumData.album_id}`, formattedData, {
+                    headers: { 'Content-Type': 'application/json' },
                 });
                 alert('Album updated successfully!');
             } else {
-                await axios.post(`${apiUrl}/artists/artist/${artistId}/albums`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                // Upload new album
+                console.log('Uploading new album for artist ID:', artistId); // Debug log
+                const response = await axios.post(`${apiUrl}/artists/artist/${artistId}/albums`, formattedData, {
+                    headers: { 'Content-Type': 'application/json' },
                 });
-                alert('Album uploaded successfully!'); //whole try is a change
+                alert('Album uploaded successfully!');
+
+                // Extract the new album ID and redirect to the upload song page
+                const newAlbumId = response.data.album_id || response.data.insertId;
+                console.log('New Album ID:', newAlbumId); // Debugging
+                navigate(`/uploadSong/${artistId}/${newAlbumId}`);
             }
-            navigate(`/artist/${artistId}`);
         } catch (err) {
-            console.error('Error:', err);
-            alert(isUpdating ? 'Error updating album.' : 'Error uploading album.');//change
+            console.error('Error during album submission:', err.response || err.message);
+            alert(isUpdating ? 'Error updating album.' : 'Error uploading album.');
         }
     };
+
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>{error}</div>;
 
     return (
         <div className="upload-page">
             <div className="upload-header">
                 <h2>{isUpdating ? 'Update Album' : 'Upload a New Album'}</h2>
-                <button className="cancel" onClick={handleGoHome}>Cancel</button>
+                <button className="cancel" onClick={handleGoHome}>
+                    Cancel
+                </button>
             </div>
             <form onSubmit={handleSubmit} className="upload-form">
-                <div className="image-upload">
-                    {imagePreview && (
-                        <img 
-                            src={imagePreview} 
-                            alt="Album Preview" 
-                            className="image-preview"
-                        />
-                    )}
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        name="album_image"
-                    />
-                </div>
                 <input
                     type="text"
                     name="album_name"
@@ -133,5 +128,3 @@ const UploadAlbum = () => {
 };
 
 export default UploadAlbum;
-
-

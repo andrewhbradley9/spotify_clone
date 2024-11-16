@@ -12,12 +12,17 @@ const ArtistPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Get the logged-in artist's ID
+    const loggedInArtistId = localStorage.getItem('artistId'); // Retrieve from localStorage
+    const loggedInRole = localStorage.getItem('role'); // Retrieve the user's role
+    const isAuthorized = loggedInRole === 'admin' || loggedInArtistId === artistId; 
+
     useEffect(() => {
         const fetchArtistAndAlbums = async () => {
             try {
                 const [artistRes, albumsRes] = await Promise.all([
                     axios.get(`${apiUrl}/artists/${artistId}`),
-                    axios.get(`${apiUrl}/artists/albums/${artistId}`)
+                    axios.get(`${apiUrl}/artists/albums/${artistId}`),
                 ]);
 
                 setArtist(artistRes.data);
@@ -25,7 +30,9 @@ const ArtistPage = () => {
                 // Fetch songs for each album
                 const albumsWithSongs = await Promise.all(
                     albumsRes.data.map(async (album) => {
-                        const songsRes = await axios.get(`${apiUrl}/artists/albums/${album.album_id}/songs/${artistId}`);
+                        const songsRes = await axios.get(
+                            `${apiUrl}/artists/albums/${album.album_id}/songs/${artistId}`
+                        );
                         return { ...album, songs: songsRes.data };
                     })
                 );
@@ -49,15 +56,17 @@ const ArtistPage = () => {
     const handleDelete = async () => {
         try {
             // Show confirmation dialog
-            const isConfirmed = window.confirm("Are you sure you want to delete this artist? This action cannot be undone.");
-            
+            const isConfirmed = window.confirm(
+                'Are you sure you want to delete this artist? This action cannot be undone.'
+            );
+
             if (isConfirmed) {
                 await axios.delete(`${apiUrl}/artists/${artistId}`);
                 navigate('/artist'); // Redirect to main artist page after deletion
             }
         } catch (err) {
-            console.error("Error deleting artist:", err);
-            alert("Error deleting artist. Please try again.");
+            console.error('Error deleting artist:', err);
+            alert('Error deleting artist. Please try again.');
         }
     };
 
@@ -70,10 +79,10 @@ const ArtistPage = () => {
             <div className="artist-header">
                 <div className="artist-profile">
                     {artist?.artist_image ? (
-                        <img 
-                            src={`${apiUrl}${artist.artist_image}`} 
-                            alt={artist.artistname} 
-                            className="artist-profile-image" 
+                        <img
+                            src={`${apiUrl}${artist.artist_image}`}
+                            alt={artist.artistname}
+                            className="artist-profile-image"
                         />
                     ) : (
                         <div className="artist-placeholder">
@@ -83,7 +92,7 @@ const ArtistPage = () => {
                     <h1>{artist?.artistname}</h1>
                     {artist?.is_verified && <span className="verified-badge">✓ Verified Artist</span>}
                 </div>
-                
+
                 <div className="artist-info">
                     <p className="genre">{artist.genre_type}</p>
                     <p className="bio">{artist.artist_bio}</p>
@@ -97,13 +106,13 @@ const ArtistPage = () => {
             <div className="albums-section">
                 <h2>Albums</h2>
                 <div className="albums-grid">
-                    {albums.map(album => (
+                    {albums.map((album) => (
                         <div key={album.album_id} className="album-card">
                             <Link to={`/albums/${album.album_id}/songs/${artistId}`}>
                                 {album.album_image ? (
-                                    <img 
-                                        src={`${apiUrl}${album.album_image}`} 
-                                        alt={album.album_name} 
+                                    <img
+                                        src={`${apiUrl}${album.album_image}`}
+                                        alt={album.album_name}
                                         className="album-image"
                                     />
                                 ) : (
@@ -123,18 +132,23 @@ const ArtistPage = () => {
             </div>
 
             <div className="action-buttons">
-                <button className="upload">
-                    <Link to={`/uploadSong/${artist.artist_id}`}>Upload Song</Link>
-                </button>
-                <button className="uppies">
-                    <Link to={`/uploadAlbum/${artist.artist_id}`}>Upload Album</Link>
-                </button>
-                <button className="update">
-                    <Link to={`/update/${artist.artist_id}`}>Update Artist</Link>
-                </button>
-                <button className="delete" onClick={handleDelete}>
-                    Delete Artist
-                </button>
+                {/* Conditionally render buttons based on authorization */}
+                {isAuthorized && (
+                    <>
+                        <button className="upload">
+                            <Link to={`/uploadSong/${artist.artist_id}`}>Upload Song</Link>
+                        </button>
+                        <button className="uppies">
+                            <Link to={`/uploadAlbum/${artist.artist_id}`}>Upload Album</Link>
+                        </button>
+                        <button className="update">
+                            <Link to={`/update/${artist.artist_id}`}>Update Artist</Link>
+                        </button>
+                        <button className="delete" onClick={handleDelete}>
+                            Delete Artist
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );

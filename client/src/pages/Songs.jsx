@@ -134,14 +134,18 @@ const AlbumSongs = () => {
                     Back to Artists
                 </button>
                 <div className="album-actions">
-                            <button 
-                                className="update-album"
-                                onClick={() => navigate(`/uploadAlbum/${artistId}/${albumId}`)}
-                            >
-                                Update Album
-                    </button>
+                    {/* Conditional rendering for Update Album button */}
+                    {(localStorage.getItem('role') === 'admin' || localStorage.getItem('artistId') === String(artistId)) && (
+                        <button 
+                            className="update-album"
+                            onClick={() => navigate(`/uploadAlbum/${artistId}/${albumId}`)}
+                        >
+                            Update Album
+                        </button>
+                    )}
                 </div>
             </div>
+
         </div>
     );
 };

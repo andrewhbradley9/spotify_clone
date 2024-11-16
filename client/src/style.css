@@ -9,6 +9,49 @@
     align-items: center;
 }
 
+.navbar {
+    display: flex;
+    justify-content: space-between; /* Left and right alignment */
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #333;
+    color: white;
+    position: relative; /* Ensures elements can be positioned inside the navbar */
+}
+
+.navbar .navbar-left {
+    flex: 10; /* Push the content to the left */
+}
+
+.navbar .navbar-right {
+    display: flex;
+    justify-content: flex-end; /* Aligns content to the right */
+    align-items: center; /* Align items vertically */
+    position: absolute; /* Position it relative to the navbar */
+    right: -820px; /* Align to the right with some padding */
+    top: 100%; /* Center vertically within the navbar */
+    transform: translateY(-50%); /* Adjust vertical centering */
+}
+
+.navbar .navbar-right span {
+    margin-right: 10px; /* Add spacing between the "Welcome" message and the button */
+}
+
+.navbar .logout-button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.navbar .logout-button:hover {
+    background-color: #d32f2f;
+}
+
+
+
 /* Common container styles */
 .container {
     max-width: 1200px;

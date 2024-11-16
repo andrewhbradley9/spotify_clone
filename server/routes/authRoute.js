@@ -40,7 +40,7 @@ router.post('/register', async (req, res) => {
             'SELECT * FROM User WHERE username = ? OR email = ?',
             [username, email]
         );
-        
+
         if (existingUser.length > 0) {
             return res.status(409).json({ error: 'Username or email already in use.' });
         }
@@ -49,20 +49,29 @@ router.post('/register', async (req, res) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // console.log(hashedPassword)
-
-        // Insert the new user into the database
+        // Insert the new user into the User table
         const [result] = await db.query(
             'INSERT INTO User (username, password, email, role) VALUES (?, ?, ?, ?)',
             [username, hashedPassword, email, role]
         );
 
+        const userId = result.insertId;
+
+        // If the user is an artist, also insert into the Artist table
+        if (role === 'artist') {
+            await db.query(
+                'INSERT INTO artist (name, user_id) VALUES (?, ?)',
+                [username, userId]
+            );
+        }
+
         // Return success message
-        res.status(201).json({ message: 'User registered successfully!', 
-            userId: result.insertId,
+        res.status(201).json({ 
+            message: 'User registered successfully!', 
+            userId: userId,
             role: role 
         });
-    
+
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ error: 'Server error. Please try again later.' });
@@ -70,6 +79,7 @@ router.post('/register', async (req, res) => {
 });
 
 
+//Login route
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
@@ -91,28 +101,45 @@ router.post('/login', async (req, res) => {
         }
 
         // Compare the provided password with the stored hashed password
-        
         const sanitizedPassword = password.trim();
         const match = await bcrypt.compare(sanitizedPassword, user[0].password);
-        
 
         if (!match) {
             return res.status(401).json({ error: 'Incorrect password.' });
         }
 
-        // Generate a JWT token
+        // Fetch artist-specific details if the role is 'artist'
+        let artistId = null;
+        if (user[0].role === 'artist') {
+            const [artist] = await db.query(
+                'SELECT artist_id FROM artist WHERE user_id = ?',
+                [user[0].user_id]
+            );
+            if (artist.length > 0) {
+                artistId = artist[0].artist_id;
+            }
+        }
+
+        // Generate a JWT token with user ID, role, and artist ID (if applicable)
         const token = jwt.sign(
-            { userId: user[0].user_id, role: user[0].role }, // Payload
-            process.env.JWT_SECRET, // Secret key from environment variables
-            { expiresIn: '1h' } // Token expiration time
+            { id: user[0].user_id, role: user[0].role, artistId }, 
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
         );
 
-        // Send the token to the client
-        res.json({ message: 'Login successful!', token });
+        // Send the token and user details to the client
+        res.json({ 
+            message: 'Login successful!', 
+            token, 
+            role: user[0].role,
+            userId: user[0].user_id,
+            artistId // Include artistId for artist users
+        });
     } catch (error) {
         console.error('Error logging in:', error);
         res.status(500).json({ error: 'Server error. Please try again later.' });
     }
 });
+
 
 export default router;

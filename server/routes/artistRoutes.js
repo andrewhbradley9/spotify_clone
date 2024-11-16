@@ -503,7 +503,7 @@ router.post('/songs/increment-play-count/:songId', (req, res) => {
 });
 
 router.get('/songs/top10', (req, res) => {
-    console.log("Received request for top 10 songs");
+    // console.log("Received request for top 10 songs");
     const query = `
     SELECT 
     s.song_id,
@@ -530,7 +530,7 @@ router.get('/songs/top10', (req, res) => {
             console.error("Error fetching top 10 songs:", err.code, err.message);
             return res.status(500).json({ error: "Error fetching top 10 songs." });
         }
-        console.log("Fetched Data:", JSON.stringify(data, null, 2));
+        // console.log("Fetched Data:", JSON.stringify(data, null, 2));
         res.json(data);
     });
 });
@@ -568,7 +568,7 @@ router.get('/artists/top10', (req, res) => {
             console.error("Error fetching top artists:", err);
             return res.status(500).json({ error: "Error fetching top artists." });
         }
-        console.log("Fetched Top Artists Data:", JSON.stringify(data, null, 2));
+        // console.log("Fetched Top Artists Data:", JSON.stringify(data, null, 2));
         res.json(data);
     });
 });
@@ -594,39 +594,33 @@ router.put('/songs/reset-play-count', (req, res) => {
     });
 });
 
-// Route to create an album with a manually entered album_id
+
+// Route to create an album with an auto-incremented album_id
 router.post('/artist/:id/albums', (req, res) => {
     const artistId = req.params.id;
-    const { album_id, album_name, release_date } = req.body;
+    const { album_name, release_date } = req.body;
+
+    console.log('Artist ID:', artistId); // Debug artist ID
+    console.log('Received Data:', album_name); // Debug request body
 
     db.query(
-        'SELECT * FROM artist WHERE artist_id = ?', [artistId],
-        (err, artistResult) => {
+        'INSERT INTO albums (artist_id, album_name, release_date) VALUES (?, ?, ?)',
+        [artistId, album_name, release_date],
+        (err, result) => {
             if (err) {
-                console.error("Database query failed:", err); // Log error
-                return res.status(500).json({ error: 'Database query failed' });
+                console.error('Failed to add album:', err); // Log insertion error
+                return res.status(500).json({ error: 'Failed to add album', details: err });
             }
-
-            if (artistResult.length === 0) {
-                console.log("Artist not found:", artistId); // Log missing artist
-                return res.status(404).json({ message: 'Artist not found, cannot add album' });
-            }
-
-            // Insert the album with the manually entered album_id
-            db.query(
-                'INSERT INTO albums (album_id, artist_id, album_name, release_date) VALUES (?, ?, ?, ?)',
-                [album_id, artistId, album_name, release_date],
-                (err, result) => {
-                    if (err) {
-                        console.error("Failed to add album:", err); // Log insertion error
-                        return res.status(500).json({ error: 'Failed to add album' });
-                    }
-                    res.status(201).json({ message: 'Album added successfully', albumId: result.insertId });
-                }
-            );
+            res.status(201).json({
+                message: 'Album added successfully',
+                albumId: result.insertId, // Return the newly generated album_id
+            });
         }
     );
 });
+
+
+
 
 
 

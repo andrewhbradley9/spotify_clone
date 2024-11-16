@@ -60,7 +60,6 @@ const Register = () => {
                     <select value={role} onChange={(e) => setRole(e.target.value)}>
                         <option value="listener">Listener</option>
                         <option value="artist">Artist</option>
-                        <option value="admin">Admin</option>
                     </select>
                     <button type="submit">Register</button>
                     {error && <p className="auth-error">{error}</p>}

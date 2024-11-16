@@ -1,15 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 const apiUrl = process.env.REACT_APP_API_URL;
+
 const UploadSong = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const artistId = location.pathname.split("/")[2];
+
+    // Retrieve logged-in artist's ID and role
+    const loggedInArtistId = localStorage.getItem('artistId');
+    const loggedInRole = localStorage.getItem('role');
+
+    console.log('Logged-in Artist ID:', loggedInArtistId); // Debugging
+    console.log('Logged-in Role:', loggedInRole); // Debugging
+
+    // Get the artistId from the URL
+    const artistIdFromUrl = location.pathname.split('/')[2];
+    console.log('Artist ID from URL:', artistIdFromUrl); // Debugging
+
     const [albums, setAlbums] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedAlbumId, setSelectedAlbumId] = useState("");
+    const [selectedAlbumId, setSelectedAlbumId] = useState('');
     const [songData, setSongData] = useState({
         title: '',
         songimage: '',
@@ -17,28 +30,36 @@ const UploadSong = () => {
         song_releasedate: '',
         genre_type: '',
         song_language: '',
-        file_path: '',
-        mp3_data: null // Initialize mp3_data as null
+        mp3_data: null, // Initialize mp3_data as null
     });
 
     const handleGoHome = () => {
         navigate('/artist');
     };
 
+    // Fetch albums when the component mounts
     useEffect(() => {
+        if (loggedInRole !== 'admin' && loggedInArtistId !== artistIdFromUrl) {
+            setError('You are not authorized to upload songs for this artist.');
+            setLoading(false);
+            return;
+        }
+
         const fetchAlbums = async () => {
             try {
-                const response = await axios.get(`${apiUrl}/artists/albums/${artistId}`);
+                const response = await axios.get(`${apiUrl}/artists/albums/${artistIdFromUrl}`);
+                console.log('Fetched albums:', response.data); // Debugging
                 setAlbums(response.data);
             } catch (err) {
-                setError('Error fetching albums');
-                console.error(err);
+                console.error('Error fetching albums:', err);
+                setError('Error fetching albums. Please try again.');
             } finally {
                 setLoading(false);
             }
         };
+
         fetchAlbums();
-    }, [artistId]);
+    }, [artistIdFromUrl, loggedInArtistId, loggedInRole]);
 
     const handleAlbumChange = (event) => {
         setSelectedAlbumId(event.target.value);
@@ -46,40 +67,51 @@ const UploadSong = () => {
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
-        setSongData(prevState => ({
+        setSongData((prevState) => ({
             ...prevState,
-            [name]: value
+            [name]: value,
         }));
     };
 
     const handleFileChange = (event) => {
-        setSongData(prevState => ({
+        setSongData((prevState) => ({
             ...prevState,
-            mp3_data: event.target.files[0] // Set the mp3_data to the selected file
+            mp3_data: event.target.files[0], // Set the mp3_data to the selected file
         }));
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
         const formData = new FormData();
-        
-        // Append all fields to the FormData
-        for (const key in songData) {
+        Object.keys(songData).forEach((key) => {
             formData.append(key, songData[key]);
-        }
+        });
         formData.append('album_id', selectedAlbumId); // Include album_id in the payload
 
+        // Debugging FormData
+        console.log('FormData being sent to backend:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+
         try {
-            await axios.post(`${apiUrl}/artists/albums/${selectedAlbumId}/songs/${artistId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data', // Set the content type for file upload
-                },
-            });
+            const response = await axios.post(
+                `${apiUrl}/song/albums/${selectedAlbumId}/songs/${artistIdFromUrl}`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data', // Set the content type for file upload
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                }
+            );
+            console.log('Song uploaded successfully:', response.data); // Debugging
             alert('Song uploaded successfully!');
             navigate('/artist'); // Navigate back to the main screen
         } catch (err) {
-            console.error('Error uploading song:', err);
-            alert('Error uploading song.');
+            console.error('Error uploading song:', err.response || err.message);
+            alert('Error uploading song. Please check your input and try again.');
         }
     };
 
@@ -95,14 +127,18 @@ const UploadSong = () => {
         <div className="upload-page">
             <div className="upload-header">
                 <h2>Upload a New Song</h2>
-                <button className="cancel" onClick={handleGoHome}>Cancel</button>
+                <button className="cancel" onClick={handleGoHome}>
+                    Cancel
+                </button>
             </div>
-            
+
             {albums.length > 0 ? (
                 <form onSubmit={handleSubmit} className="upload-form">
-                    <select value={selectedAlbumId} onChange={handleAlbumChange}>
-                        <option value="" disabled>Select an album</option>
-                        {albums.map(album => (
+                    <select value={selectedAlbumId} onChange={handleAlbumChange} required>
+                        <option value="" disabled>
+                            Select an album
+                        </option>
+                        {albums.map((album) => (
                             <option key={album.album_id} value={album.album_id}>
                                 {album.album_name} ({album.release_date})
                             </option>
@@ -162,7 +198,9 @@ const UploadSong = () => {
                                     required
                                 />
                             </div>
-                            <button type="submit" className="upsong">Upload Song</button>
+                            <button type="submit" className="upsong">
+                                Upload Song
+                            </button>
                         </>
                     )}
                 </form>
