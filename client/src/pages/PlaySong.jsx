@@ -7,9 +7,9 @@ const PlaySong = () => {
     const audioSrc = `${apiUrl}/artists/play/${albumId}/${songId}`;
     const navigate = useNavigate();
 
-    const handleGoHome = () => {
-        navigate('/'); // Navigate to the main page
-    };
+    // const handleGoHome = () => {
+    //     navigate('/'); // Navigate to the main page
+    // };
 
     useEffect(() => {
         const incrementPlayCount = async () => {

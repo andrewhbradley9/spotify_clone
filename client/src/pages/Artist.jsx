@@ -43,15 +43,15 @@ const Artist = () => {
         fetchArtistsTopSongsAndTopArtists();
     }, []); // Run on mount
 
-    const handleDelete = async (id) => {
-        try {
-            await axios.delete(`${apiUrl}/artists/${id}`);
-            setArtists((prev) => prev.filter((artist) => artist.artist_id !== id));
-        } catch (err) {
-            console.error("Error deleting artist:", err.response?.data || err.message);
-            alert("Failed to delete artist.");
-        }
-    };
+    // const handleDelete = async (id) => {
+    //     try {
+    //         await axios.delete(`${apiUrl}/artists/${id}`);
+    //         setArtists((prev) => prev.filter((artist) => artist.artist_id !== id));
+    //     } catch (err) {
+    //         console.error("Error deleting artist:", err.response?.data || err.message);
+    //         alert("Failed to delete artist.");
+    //     }
+    // };
 
     const resetPlayCount = async () => {
         try {
