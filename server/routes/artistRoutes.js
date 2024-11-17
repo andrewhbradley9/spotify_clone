@@ -1057,7 +1057,7 @@ router.get('/all/subscribers', (req, res) => {
         if (mode === 'cumulative') {
             const cumulativeQuery = `
                 SELECT 
-                    u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                    u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role, u.subscription_status,
                     a.artist_id, a.artistname
                 FROM User u
                 LEFT JOIN artist a ON u.user_id = a.user_id
@@ -1082,7 +1082,7 @@ router.get('/all/subscribers', (req, res) => {
         if (mode === 'inactive') {
             const inactiveQuery = `
                 SELECT 
-                    u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                    u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role, u.subscription_status,
                     a.artist_id, a.artistname
                 FROM User u
                 LEFT JOIN artist a ON u.user_id = a.user_id
@@ -1117,7 +1117,7 @@ router.get('/all/subscribers', (req, res) => {
         // Query for new active subscribers in the range
         const newActiveQuery = `
             SELECT 
-                u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role, u.subscription_status,
                 a.artist_id, a.artistname
             FROM User u
             LEFT JOIN artist a ON u.user_id = a.user_id
@@ -1127,7 +1127,7 @@ router.get('/all/subscribers', (req, res) => {
         // Query for inactive user details in the range
         const inactiveQuery = `
             SELECT 
-                u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role, u.subscription_status,
                 a.artist_id, a.artistname
             FROM User u
             LEFT JOIN artist a ON u.user_id = a.user_id

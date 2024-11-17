@@ -1616,4 +1616,15 @@ select:focus {
     color: #faeeee; /* Light color for dates */
 }
 
+.dropdown-menu,
+.username-dropdown {
+    position: fixed; /* Important: detached from the table's flow */
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-radius: 4px;
+    padding: 5px;
+    min-width: 150px;
+}
 
