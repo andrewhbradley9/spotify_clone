@@ -51,9 +51,9 @@ app.use('/song', songRoutes); // Song routes
 app.use('/follow', followerRoute); // follower routes
 
 // Serve React app for all unknown routes
-// app.get('*', (req, res) => {
-//     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-// });
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+});
 
 // Root endpoint (optional)
 app.get('/', (req, res) => {
