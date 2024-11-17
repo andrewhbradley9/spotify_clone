@@ -1,18 +1,14 @@
 import express from 'express';
 import cors from 'cors';
-import cron  from 'node-cron';
+import cron from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
 import authRoute from './routes/authRoute.js';
-import songRoutes from './routes/songRoutes.js'; // New import
-
-//add multer and path
+import songRoutes from './routes/songRoutes.js';
 import multer from 'multer';
 import path from 'path';
-
 import dotenv from 'dotenv';
+
 dotenv.config();
-
-
 
 const app = express();
 const PORT = process.env.PORT || 3360;
@@ -21,18 +17,11 @@ const PORT = process.env.PORT || 3360;
 app.use(cors());
 app.use(express.json()); // To parse JSON requests
 
-// Set Content Security Policy
-// app.use((req, res, next) => {
-//     res.setHeader("Content-Security-Policy", 
-//         "default-src 'self'; " + // Allow resources from the same origin
-//         "font-src 'self' http://localhost:3360 data:; " + // Allow fonts from your server and data URLs
-//         "style-src 'self' 'unsafe-inline'; " + // Allow inline styles (use carefully)
-//         "script-src 'self' 'unsafe-inline' 'unsafe-eval';" // Allow inline scripts and eval (use carefully)
-//     );
-//     next();
-// });
+// Serve static files from the React app's build directory
+const __dirname = path.resolve(); // Ensures compatibility with ES modules
+app.use(express.static(path.join(__dirname, 'client/build')));
 
-
+// Cron job for resetting play counts
 cron.schedule('0 0 1 * *', () => {
     console.log('Running monthly play count reset...');
     db.query('UPDATE song SET play_count = 0 WHERE play_count > 0', (err, result) => {
@@ -44,20 +33,20 @@ cron.schedule('0 0 1 * *', () => {
     });
 });
 
+// Routes
+app.use('/artists', artistRoutes); // Artist routes
+app.use('/auth', authRoute); // Authentication routes
+app.use('/song', songRoutes); // Song routes
 
-// Use artist routes
-app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
-
-// Use artist routes
-app.use('/auth', authRoute);
-
-app.use('/song', songRoutes); // Use the song routes
-
-app.get('/', (req, res) => {
-    res.send("Backend if finally CI/CD + andrew testing hehe");
+// Serve React app for all unknown routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 
-
+// Root endpoint (optional)
+app.get('/', (req, res) => {
+    res.send("Backend is finally CI/CD + Andrew testing hehe");
+});
 
 // Start the server
 app.listen(PORT, () => {

@@ -1228,3 +1228,96 @@ select:focus {
 .image-upload input[type="file"] {
     margin-top: 10px;
 }
+
+
+.loading p {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.dots {
+    display: inline-block;
+    margin-left: 5px;
+    animation: blink 1.4s infinite both;
+}
+
+@keyframes blink {
+    0%, 20% {
+        color: transparent;
+    }
+    50% {
+        color: white;
+    }
+    100% {
+        color: transparent;
+    }
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    justify-content: space-evenly;
+    border-bottom: 2px solid #444; /* Subtle separator */
+    margin-bottom: 20px;
+}
+
+.tab-navigation button {
+    background: #333; /* Dark background */
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #fff; /* Light text color */
+    transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+    text-align: center;
+    border-radius: 8px;
+    margin: 0 5px;
+}
+
+.tab-navigation button:hover {
+    background: #555; /* Slightly lighter on hover */
+    color: #fff;
+    transform: scale(1.05); /* Subtle hover effect */
+}
+
+.tab-navigation button.active-tab {
+    background: #ff4500; /* Highlighted tab background (orange/red) */
+    color: white; /* White text for active tab */
+    font-weight: bold;
+    border: 2px solid #ff4500; /* Matching border */
+}
+
+/* Tab Content */
+.tab-content {
+    background: #222; /* Dark background for content area */
+    padding: 20px;
+    border: 1px solid #444; /* Subtle border */
+    border-radius: 8px;
+    color: #fff; /* Light text color */
+}
+
+/* Tab Text Links */
+.tab-navigation button a {
+    text-decoration: none;
+    color: inherit; /* Inherit the button's color */
+    font-family: 'Arial', sans-serif;
+}
+
+.tab-navigation button a:hover {
+    color: inherit; /* Ensure no color change on hover */
+}
+
+/* Responsive Styling */
+@media (max-width: 600px) {
+    .tab-navigation {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .tab-navigation button {
+        width: 90%;
+        margin-bottom: 10px;
+    }
+}
+

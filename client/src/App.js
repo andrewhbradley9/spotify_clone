@@ -12,6 +12,9 @@ import ArtistPage from "./pages/ArtistPage";
 import { AudioProvider } from "./context/AudioContext";
 import AudioPlayer from "./components/AudioPlayer";
 import Navbar from "./components/Navbar";
+import AdminReports from "./pages/AdminReports";
+import ListenerReports from "./pages/ListenerReports";
+import ArtistReports from "./pages/ArtistReports";
 
 import "./style.css";
 
@@ -37,7 +40,10 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/artist/:artistId" element={<ArtistPage />} />
-          </Routes>
+            <Route path="/AdminReports" element={<AdminReports />} />
+            <Route path="/ListenerReports" element={<ListenerReports />} />
+            <Route path="/ArtistReports" element={<ArtistReports />} />
+            </Routes>
 
           {/* Show AudioPlayer on all pages except login and register */}
           {!isAuthPage && <AudioPlayer />}

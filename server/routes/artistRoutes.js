@@ -179,7 +179,7 @@ router.get('/albums/:albumId/songs/:artistId', (req, res) => {
     const { albumId, artistId } = req.params;
 
     const query = `
-        SELECT song.*
+        SELECT *
         FROM song
         JOIN albums ON song.album_id = albums.album_id
         WHERE albums.artist_id = ? AND albums.album_id = ?
@@ -489,89 +489,214 @@ router.get('/users/:id/followed_artists', (req, res) => {
 });
 
 // Endpoint to increment play_count for a song
-router.post('/songs/increment-play-count/:songId', (req, res) => {
+router.post('/songs/increment-play-count/:songId', async (req, res) => {
     const { songId } = req.params;
-    const query = `UPDATE song SET play_count = play_count + 1 WHERE song_id = ?`;
+    console.log(`Received request to increment play count for songId: ${songId}`);
 
-    db.query(query, [songId], (err, result) => {
-        if (err) {
-            console.error("Error updating play count:", err);
-            return res.status(500).json({ error: "Error updating play count." });
-        }
-        res.status(200).json({ message: "Play count updated successfully." });
-    });
+    try {
+        // Increment play count in the song table
+        const updateSongQuery = `UPDATE song SET play_count = play_count + 1 WHERE song_id = ?`;
+        await db.promise().query(updateSongQuery, [songId]);
+
+        // Insert a record in play_history with the updated play count
+        const insertHistoryQuery = `
+            INSERT INTO play_history (song_id, total_play_count, play_date) 
+            VALUES (?, (SELECT play_count FROM song WHERE song_id = ?), CURRENT_TIMESTAMP)
+        `;
+        await db.promise().query(insertHistoryQuery, [songId, songId]);
+
+        console.log("Play count and play history updated successfully.");
+        res.status(200).json({ message: "Play count and play history updated successfully." });
+    } catch (err) {
+        console.error("Error processing play count update and history log:", err);
+        res.status(500).json({ error: "Failed to process request.", details: err.message });
+    }
 });
 
 router.get('/songs/top10', (req, res) => {
-    // console.log("Received request for top 10 songs");
-    const query = `
-    SELECT 
-    s.song_id,
-    s.title,
-    s.duration,
-    a.album_name,
-    ar.artistname,
-    s.song_releasedate,
-    s.play_count
-    FROM 
-        song s
-    JOIN 
-        albums a ON s.album_id = a.album_id
-    JOIN 
-        artist ar ON a.artist_id = ar.artist_id
-    WHERE 
-        s.play_count > 0
-    ORDER BY 
-        s.play_count DESC
-    LIMIT 10;
-    `
-    db.query(query, (err, data) => {
+    const { start_date, end_date, limit = 10, sortOrder = 'most', dateRangeOption } = req.query;
+    const orderDirection = sortOrder === 'least' ? 'ASC' : 'DESC';
+
+    let query;
+    let queryParams;
+
+    if (dateRangeOption === "currentMonth") {
+        query = `
+        SELECT DISTINCT
+            s.song_id,
+            s.title,
+            s.duration,
+            COALESCE(a.album_name, 'Unknown Album') AS album_name,
+            ar.artistname,
+            s.song_releasedate,
+            COALESCE(s.play_count, 0) AS play_count,
+            COALESCE(s.likes, 0) AS likes
+        FROM 
+            song s
+        LEFT JOIN 
+            albums a ON s.album_id = a.album_id
+        LEFT JOIN 
+            artist ar ON a.artist_id = ar.artist_id
+        LEFT JOIN 
+            play_history ph ON s.song_id = ph.song_id
+        ORDER BY 
+            play_count ${orderDirection}, likes ${orderDirection}
+        LIMIT ?;
+        `;
+        queryParams = [parseInt(limit)];
+    } else {
+        query = `
+        SELECT DISTINCT
+            s.song_id,
+            s.title,
+            s.duration,
+            COALESCE(a.album_name, 'Unknown Album') AS album_name,
+            ar.artistname,
+            s.song_releasedate,
+            COALESCE(COUNT(l.like_date), 0) AS total_likes,
+            COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count
+        FROM 
+            song s
+        LEFT JOIN 
+            albums a ON s.album_id = a.album_id
+        LEFT JOIN 
+            artist ar ON a.artist_id = ar.artist_id
+        LEFT JOIN 
+            (
+                SELECT ph.song_id, ph.total_play_count, ph.play_date
+                FROM play_history ph
+                INNER JOIN (
+                    SELECT song_id, MAX(play_date) AS last_play_date
+                    FROM play_history
+                    WHERE play_date BETWEEN ? AND ?
+                    GROUP BY song_id
+                ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
+            ) AS ph_on_last_date ON s.song_id = ph_on_last_date.song_id
+        LEFT JOIN 
+            likes l ON s.song_id = l.song_id AND l.like_date BETWEEN ? AND ?
+        GROUP BY 
+            s.song_id, s.title, s.duration, album_name, ar.artistname, s.song_releasedate
+        ORDER BY 
+            total_play_count ${orderDirection}, total_likes ${orderDirection}
+        LIMIT ?;
+        `;
+        queryParams = [start_date, end_date, start_date, end_date, parseInt(limit)];
+    }
+
+    db.query(query, queryParams, (err, data) => {
         if (err) {
-            console.error("Error fetching top 10 songs:", err.code, err.message);
-            return res.status(500).json({ error: "Error fetching top 10 songs." });
+            console.error("Error fetching top songs:", err.code, err.message);
+            return res.status(500).json({ error: "Error fetching top songs." });
         }
-        // console.log("Fetched Data:", JSON.stringify(data, null, 2));
+        console.log("Fetched Data:", JSON.stringify(data, null, 2));
         res.json(data);
     });
 });
 
+
 // top artists
 router.get('/artists/top10', (req, res) => {
-    const query = `
-        SELECT 
-            ar.artist_id,
-            ar.artistname,
-            ar.artist_bio,
-            ar.artist_event,
-            ar.awards,
-            ar.genre_type,
-            ar.follower_count,
-            ar.is_verified,
-            SUM(s.play_count) AS total_play_count
-        FROM 
-            artist ar
-        JOIN 
-            albums a ON ar.artist_id = a.artist_id
-        JOIN 
-            song s ON a.album_id = s.album_id
-        WHERE 
-            s.play_count > 0
-        GROUP BY 
-            ar.artist_id, ar.artistname, ar.artist_bio, ar.artist_event, ar.awards, ar.genre_type, ar.follower_count, ar.is_verified
-        ORDER BY 
-            total_play_count DESC
-        LIMIT 10;
-    `;
+    const limit = parseInt(req.query.limit) || 10;
+    const { start_date, end_date, sortOrder = 'most' } = req.query;
+    const orderDirection = sortOrder === 'least' ? 'ASC' : 'DESC';
 
-    db.query(query, (err, data) => {
+    let query;
+    let queryParams;
+
+    if (start_date && end_date) {
+        query = `
+        SELECT artist_id, artistname, artist_bio, artist_event, awards, genre_type, follower_count, is_verified,
+               title AS most_played_song_title, total_play_count, total_likes, total_popularity_score
+        FROM (
+            SELECT 
+                ar.artist_id,
+                ar.artistname,
+                ar.artist_bio,
+                ar.artist_event,
+                ar.awards,
+                ar.genre_type,
+                ar.follower_count,
+                ar.is_verified,
+                s.title,
+                COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count,
+                COALESCE(COUNT(l.like_date), 0) AS total_likes,
+                (COALESCE(ph_on_last_date.total_play_count, 0) + COALESCE(COUNT(l.like_date), 0)) AS total_popularity_score,
+                ROW_NUMBER() OVER (PARTITION BY ar.artist_id ORDER BY (COALESCE(ph_on_last_date.total_play_count, 0) + COALESCE(COUNT(l.like_date), 0)) ${orderDirection}) AS \`rank\`
+            FROM 
+                artist ar
+            JOIN 
+                albums a ON ar.artist_id = a.artist_id
+            JOIN 
+                song s ON a.album_id = s.album_id
+            LEFT JOIN 
+                (
+                    SELECT ph.song_id, ph.total_play_count
+                    FROM play_history ph
+                    INNER JOIN (
+                        SELECT song_id, MAX(play_date) AS last_play_date
+                        FROM play_history
+                        WHERE play_date BETWEEN ? AND ?
+                        GROUP BY song_id
+                    ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
+                ) AS ph_on_last_date ON s.song_id = ph_on_last_date.song_id
+            LEFT JOIN 
+                likes l ON s.song_id = l.song_id AND l.like_date BETWEEN ? AND ?
+            GROUP BY 
+                ar.artist_id, ar.artistname, ar.artist_bio, ar.artist_event, ar.awards, ar.genre_type, ar.follower_count, 
+                ar.is_verified, s.title, ph_on_last_date.total_play_count
+        ) AS ranked_songs
+        WHERE \`rank\` = 1
+        ORDER BY total_popularity_score ${orderDirection}
+        LIMIT ?;
+        `;
+
+        queryParams = [start_date, end_date, start_date, end_date, limit];
+    } else {
+        query = `
+        SELECT artist_id, artistname, artist_bio, artist_event, awards, genre_type, follower_count, is_verified,
+               title AS most_played_song_title, total_play_count, total_likes, total_popularity_score
+        FROM (
+            SELECT 
+                ar.artist_id,
+                ar.artistname,
+                ar.artist_bio,
+                ar.artist_event,
+                ar.awards,
+                ar.genre_type,
+                ar.follower_count,
+                ar.is_verified,
+                s.title,
+                s.play_count AS total_play_count,
+                s.likes AS total_likes,
+                (s.play_count + s.likes) AS total_popularity_score,
+                ROW_NUMBER() OVER (PARTITION BY ar.artist_id ORDER BY (s.play_count + s.likes) ${orderDirection}) AS \`rank\`
+            FROM 
+                artist ar
+            JOIN 
+                albums a ON ar.artist_id = a.artist_id
+            JOIN 
+                song s ON a.album_id = s.album_id
+            WHERE s.play_count + s.likes > 0
+        ) AS ranked_songs
+        WHERE \`rank\` = 1
+        ORDER BY total_popularity_score ${orderDirection}
+        LIMIT ?;
+        `;
+
+        queryParams = [limit];
+    }
+
+    db.query(query, queryParams, (err, data) => {
         if (err) {
             console.error("Error fetching top artists:", err);
             return res.status(500).json({ error: "Error fetching top artists." });
         }
-        // console.log("Fetched Top Artists Data:", JSON.stringify(data, null, 2));
+        console.log("Fetched Top Artists Data:", JSON.stringify(data, null, 2));
         res.json(data);
     });
 });
+
+
 
 // Reset play count at the beginning of the month
 router.put('/songs/reset-play-count', (req, res) => {
@@ -594,33 +719,39 @@ router.put('/songs/reset-play-count', (req, res) => {
     });
 });
 
-
-// Route to create an album with an auto-incremented album_id
+// Route to create an album with a manually entered album_id
 router.post('/artist/:id/albums', (req, res) => {
     const artistId = req.params.id;
-    const { album_name, release_date } = req.body;
-
-    console.log('Artist ID:', artistId); // Debug artist ID
-    console.log('Received Data:', album_name); // Debug request body
+    const { album_id, album_name, release_date } = req.body;
 
     db.query(
-        'INSERT INTO albums (artist_id, album_name, release_date) VALUES (?, ?, ?)',
-        [artistId, album_name, release_date],
-        (err, result) => {
+        'SELECT * FROM artist WHERE artist_id = ?', [artistId],
+        (err, artistResult) => {
             if (err) {
-                console.error('Failed to add album:', err); // Log insertion error
-                return res.status(500).json({ error: 'Failed to add album', details: err });
+                console.error("Database query failed:", err); // Log error
+                return res.status(500).json({ error: 'Database query failed' });
             }
-            res.status(201).json({
-                message: 'Album added successfully',
-                albumId: result.insertId, // Return the newly generated album_id
-            });
+
+            if (artistResult.length === 0) {
+                console.log("Artist not found:", artistId); // Log missing artist
+                return res.status(404).json({ message: 'Artist not found, cannot add album' });
+            }
+
+            // Insert the album with the manually entered album_id
+            db.query(
+                'INSERT INTO albums (album_id, artist_id, album_name, release_date) VALUES (?, ?, ?, ?)',
+                [album_id, artistId, album_name, release_date],
+                (err, result) => {
+                    if (err) {
+                        console.error("Failed to add album:", err); // Log insertion error
+                        return res.status(500).json({ error: 'Failed to add album' });
+                    }
+                    res.status(201).json({ message: 'Album added successfully', albumId: result.insertId });
+                }
+            );
         }
     );
 });
-
-
-
 
 
 
@@ -651,23 +782,368 @@ router.delete('/albums/:id', (req, res) => {
     );
 });
 
-// Change begin: Update artist route to handle image upload
-/*router.post('/artists', upload.single('artist_image'), (req, res) => {
-    const artistData = {
-        ...req.body,
-        artist_image: req.file ? `/uploads/${req.file.filename}` : null
-    };
-    // ... rest of your artist creation logic
+/// Get total likes for an artist
+router.get('/:artistId/totalLikes', (req, res) => {
+    const artistId = req.params.artistId;
+
+    // SQL query to count total likes for an artist's songs
+    const query = `
+        SELECT COUNT(likes.like_id) AS totalLikes
+        FROM likes
+        INNER JOIN song ON likes.Song_id = song.song_id
+        INNER JOIN albums ON song.album_id = albums.album_id
+        WHERE albums.artist_id = ?`;
+
+    // Execute the query
+    db.query(query, [artistId], (err, results) => {
+        if (err) {
+            console.error('Error executing total likes query:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Check if results are returned
+        if (results.length > 0) {
+            res.json({ totalLikes: results[0].totalLikes });
+        } else {
+            res.json({ totalLikes: 0 }); // No likes found for the artist
+        }
+    });
 });
 
-// Update album route to handle image upload
-router.post('/artist/:id/albums', upload.single('album_image'), (req, res) => {
-    const albumData = {
-        ...req.body,
-        album_image: req.file ? `/uploads/${req.file.filename}` : null
-    };
-    // ... rest of your album creation logic
+router.post("/songs/:songId/like", (req, res) => {
+    const { songId } = req.params;
+    const userId = req.body.user_id; // get user_id from request body for tracking
+
+    // Check if the user has already liked the song
+    const checkQuery = `SELECT * FROM likes WHERE User_id = ? AND Song_id = ?`;
+    db.query(checkQuery, [userId, songId], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error while checking likes." });
+
+        if (results.length > 0) {
+            // User has already liked the song, so we perform an "unlike" operation
+            const deleteLike = `DELETE FROM likes WHERE User_id = ? AND Song_id = ?`;
+            db.query(deleteLike, [userId, songId], (err) => {
+                if (err) return res.status(500).json({ error: "Database error while removing like." });
+
+                // Decrement like_count in the song table
+                const decrementQuery = `UPDATE song SET likes = likes - 1 WHERE song_id = ?`;
+                db.query(decrementQuery, [songId], (err) => {
+                    if (err) return res.status(500).json({ error: "Database error while updating like count." });
+                    res.json({ message: "Song unliked successfully!" });
+                });
+            });
+        } else {
+            // User has not liked the song, so we proceed with a "like" operation
+            const insertLike = `INSERT INTO likes (User_id, Song_id) VALUES (?, ?)`;
+            db.query(insertLike, [userId, songId], (err) => {
+                if (err) return res.status(500).json({ error: "Database error while inserting like." });
+
+                // Increment like_count in the song table
+                const incrementQuery = `UPDATE song SET likes = likes + 1 WHERE song_id = ?`;
+                db.query(incrementQuery, [songId], (err) => {
+                    if (err) return res.status(500).json({ error: "Database error while updating like count." });
+                    res.json({ message: "Song liked successfully!" });
+                });
+            });
+        }
+    });
 });
-//change end*/
+
+// Get a song's likes by song_id
+router.get('/song-likes/:song_id', (req, res) => {
+    const songId = req.params.song_id;
+  
+    // SQL query to get song likes
+    const query = `
+      SELECT song.likes
+      FROM song
+      JOIN albums ON song.album_id = albums.album_id
+      JOIN artist ON albums.artist_id = artist.artist_id
+      WHERE song.song_id = ?;
+    `;
+  
+    // Execute query with songId as parameter
+    db.execute(query, [songId], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+  
+      if (results.length > 0) {
+        // Return the song's details if found
+        res.json(results[0]);
+      } else {
+        // If no song found
+        res.status(404).json({ message: 'Song not found' });
+      }
+    });
+  });
+
+  router.get('/most-played/genres', (req, res) => {
+    const { start_date, end_date } = req.query;
+
+    let query;
+    let queryParams = [];
+
+    if (start_date && end_date) {
+        // Query when a specific month (date range) is selected, using play_history.total_play_count
+        query = `
+        SELECT genre.genre_type, COALESCE(SUM(ph_on_last_date.total_play_count), 0) AS total_play_count
+        FROM genre
+        LEFT JOIN song ON genre.genre_type = song.genre_type
+        LEFT JOIN (
+            SELECT ph.song_id, ph.total_play_count
+            FROM play_history ph
+            INNER JOIN (
+                SELECT song_id, MAX(play_date) AS last_play_date
+                FROM play_history
+                WHERE play_date BETWEEN ? AND ?
+                GROUP BY song_id
+            ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
+        ) AS ph_on_last_date ON song.song_id = ph_on_last_date.song_id
+        GROUP BY genre.genre_type
+        ORDER BY total_play_count DESC;
+        `;
+        queryParams = [start_date, end_date];
+    } else {
+        // Default query using song.play_count when no date range is selected
+        query = `
+        SELECT genre.genre_type, COALESCE(SUM(song.play_count), 0) AS total_play_count
+        FROM genre
+        LEFT JOIN song ON genre.genre_type = song.genre_type
+        GROUP BY genre.genre_type
+        ORDER BY total_play_count DESC;
+        `;
+    }
+
+    // Execute the query with the appropriate parameters
+    db.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.error('Error fetching most played genres:', err);
+            res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+            res.json(results);
+        }
+    });
+});
+
+  
+  router.get('/all/users', (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    // Ensure 'endDate' is always provided
+    if (!endDate) {
+        return res.status(400).json({ error: "Please provide endDate in 'YYYY-MM-DD' format." });
+    }
+
+    // Initialize variables for query and parameters
+    let query, params;
+
+    if (startDate) {
+        // Case 1: Fetch users within a specific date range (from startDate to endDate)
+        query = `
+            SELECT COUNT(user_id) AS total_users, MAX(user_id) AS last_user_id
+            FROM User
+            WHERE created_at BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)
+        `;
+        params = [startDate, endDate];
+    } else {
+        // Case 2: Fetch all users up to the specified endDate
+        query = `
+            SELECT COUNT(user_id) AS total_users_up_to_date
+            FROM User
+            WHERE created_at <= DATE_ADD(?, INTERVAL 1 DAY)
+        `;
+        params = [endDate];
+    }
+
+    // Execute the query
+    db.query(query, params, (err, results) => {
+        if (err) {
+            console.error('Error fetching users:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        // Send response based on whether a startDate was provided
+        if (startDate) {
+            res.json({
+                startDate,
+                endDate,
+                total_users: results[0].total_users || 0,
+                last_user_id: results[0].last_user_id || null,
+            });
+        } else {
+            res.json({
+                total_users_up_to_date: results[0].total_users_up_to_date || 0,
+            });
+        }
+    });
+});
+
+router.get('/all/subscribers', (req, res) => {
+    const { startDate, endDate, mode } = req.query;
+
+    if (!endDate) {
+        return res.status(400).json({ error: "Please provide endDate in 'YYYY-MM-DD' format." });
+    }
+
+    // Step 1: Check if any users were created on or before endDate
+    const checkUsersExistQuery = `
+        SELECT COUNT(user_id) AS total_users_up_to_date
+        FROM User
+        WHERE created_at <= DATE_ADD(?, INTERVAL 1 DAY)
+    `;
+
+    db.query(checkUsersExistQuery, [endDate], (err, userCountResults) => {
+        if (err) {
+            console.error('Error checking user existence:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        const userCount = userCountResults[0].total_users_up_to_date;
+
+        // If no users exist before or on endDate, return 0 for all subscription-related counts
+        if (userCount === 0) {
+            return res.json({
+                total_active_subscribers: 0,
+                active_subscribers: 0,
+                inactive_subscribers: 0,
+            });
+        }
+
+        // Step 2: Handle cumulative total for totalActiveSubscribers
+        if (mode === 'cumulative') {
+            const queryTotalActiveSubscribers = `
+                SELECT COUNT(*) AS total_active_subscribers
+                FROM User
+                WHERE subscription_status = 'active' AND subscription_date <= ?
+            `;
+
+            db.query(queryTotalActiveSubscribers, [endDate], (err, results) => {
+                if (err) {
+                    console.error('Error fetching cumulative total active subscribers:', err);
+                    return res.status(500).json({ error: 'Internal Server Error' });
+                }
+
+                return res.json({
+                    total_active_subscribers: results[0].total_active_subscribers || 0
+                });
+            });
+        } else {
+            // Step 3: Existing logic for fetching active and inactive subscribers within range
+            if (!startDate) {
+                return res.status(400).json({ error: "Please provide both startDate and endDate for range-based queries." });
+            }
+
+            const querySubscribers = `
+                SELECT 
+                    SUM(subscription_status = 'active' AND subscription_date BETWEEN ? AND ?) AS active_subscribers,
+                    SUM(
+                        subscription_status = 'inactive' OR 
+                        (subscription_status = 'active' AND subscription_date > ?)
+                    ) AS inactive_subscribers
+                FROM User
+            `;
+
+            db.query(querySubscribers, [startDate, endDate, endDate], (err, results) => {
+                if (err) {
+                    console.error('Error fetching active and inactive subscribers:', err);
+                    return res.status(500).json({ error: 'Internal Server Error' });
+                }
+
+                return res.json({
+                    active_subscribers: results[0].active_subscribers || 0,
+                    inactive_subscribers: results[0].inactive_subscribers || 0,
+                });
+            });
+        }
+    });
+});
+
+// Backend route to get artist information, albums, and songs
+router.get('/artist/:id', (req, res) => {
+    const artistId = req.params.id;
+
+    const query = `
+        SELECT 
+            ar.artist_id, ar.artistname, ar.artist_bio, ar.artist_event, ar.awards, ar.genre_type, ar.follower_count, ar.is_verified,
+            al.album_id, al.album_name, al.release_date,
+            s.song_id, s.title AS song_title, s.duration,
+            COALESCE(ph_monthly.total_play_count, 0) AS total_play_count,
+            COALESCE(l.total_likes, 0) AS total_likes
+        FROM artist ar
+        LEFT JOIN albums al ON ar.artist_id = al.artist_id
+        LEFT JOIN song s ON al.album_id = s.album_id
+        LEFT JOIN (
+            SELECT ph.song_id, ph.total_play_count, ph.play_date
+            FROM play_history ph
+            INNER JOIN (
+                SELECT song_id, MAX(play_date) AS last_play_date
+                FROM play_history
+                WHERE MONTH(play_date) = MONTH(CURRENT_DATE()) 
+                  AND YEAR(play_date) = YEAR(CURRENT_DATE())
+                GROUP BY song_id
+            ) AS latest_play ON ph.song_id = latest_play.song_id AND ph.play_date = latest_play.last_play_date
+        ) AS ph_monthly ON s.song_id = ph_monthly.song_id
+        LEFT JOIN (
+            SELECT song_id, COUNT(like_date) AS total_likes
+            FROM likes
+            GROUP BY song_id
+        ) AS l ON s.song_id = l.song_id
+        WHERE ar.artist_id = ?
+        GROUP BY ar.artist_id, al.album_id, s.song_id;
+    `;
+
+    db.query(query, [artistId], (err, results) => {
+        if (err) {
+            console.error('Error fetching artist, albums, and songs:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Artist not found' });
+        }
+
+        // Organize the results into a structured format
+        const artistInfo = {
+            artist_id: results[0].artist_id,
+            artistname: results[0].artistname,
+            artist_bio: results[0].artist_bio,
+            artist_event: results[0].artist_event,
+            awards: results[0].awards,
+            genre_type: results[0].genre_type,
+            follower_count: results[0].follower_count,
+            is_verified: results[0].is_verified,
+            albums: []
+        };
+
+        // Map albums and their songs
+        const albumsMap = {};
+
+        results.forEach(row => {
+            // If album is not added yet, add it
+            if (row.album_id && !albumsMap[row.album_id]) {
+                albumsMap[row.album_id] = {
+                    album_id: row.album_id,
+                    album_name: row.album_name,
+                    release_date: row.release_date,
+                    songs: []
+                };
+                artistInfo.albums.push(albumsMap[row.album_id]);
+            }
+            // If there's a song, add it to the current album
+            if (row.song_id) {
+                albumsMap[row.album_id].songs.push({
+                    song_id: row.song_id,
+                    song_title: row.song_title,
+                    duration: row.duration,
+                    total_play_count: row.total_play_count,
+                    total_likes: row.total_likes
+                });
+            }
+        });
+
+        res.json(artistInfo);
+    });
+});
 
 export default router;
+
