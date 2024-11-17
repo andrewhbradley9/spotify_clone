@@ -11,27 +11,38 @@ const ArtistPage = () => {
     const [albums, setAlbums] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isFollowing, setIsFollowing] = useState(false);
 
-    // Get the logged-in artist's ID
-    const loggedInArtistId = localStorage.getItem('artistId'); // Retrieve from localStorage
-    const loggedInRole = localStorage.getItem('role'); // Retrieve the user's role
+    // Get the logged-in user's details
+    const loggedInUserId = localStorage.getItem('userId');
+    const loggedInArtistId = localStorage.getItem('artistId'); 
+    const loggedInRole = localStorage.getItem('role'); 
+    const authToken = localStorage.getItem('token');
     const isAuthorized = loggedInRole === 'admin' || loggedInArtistId === artistId; 
+
+    console.log("authToken:", authToken);
 
     useEffect(() => {
         const fetchArtistAndAlbums = async () => {
             try {
                 const [artistRes, albumsRes] = await Promise.all([
-                    axios.get(`${apiUrl}/artists/${artistId}`),
-                    axios.get(`${apiUrl}/artists/albums/${artistId}`),
+                    axios.get(`${apiUrl}/artists/${artistId}`, {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }),
+                    axios.get(`${apiUrl}/artists/albums/${artistId}`, {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }),
                 ]);
 
                 setArtist(artistRes.data);
 
-                // Fetch songs for each album
                 const albumsWithSongs = await Promise.all(
                     albumsRes.data.map(async (album) => {
                         const songsRes = await axios.get(
-                            `${apiUrl}/artists/albums/${album.album_id}/songs/${artistId}`
+                            `${apiUrl}/artists/albums/${album.album_id}/songs/${artistId}`,
+                            {
+                                headers: { Authorization: `Bearer ${authToken}` },
+                            }
                         );
                         return { ...album, songs: songsRes.data };
                     })
@@ -46,7 +57,67 @@ const ArtistPage = () => {
         };
 
         fetchArtistAndAlbums();
-    }, [artistId]);
+    }, [artistId, authToken]);
+
+    console.log("artistId and userId", loggedInUserId, artistId);
+
+    useEffect(() => {
+        const fetchFollowStatus = async () => {
+            if (!authToken) {
+                console.error('Token is missing. Skipping follow status fetch.');
+                return;
+            }
+
+            try {
+                const { data: followStatus } = await axios.get(
+                    `${apiUrl}/follow/user/${loggedInUserId}/follow-status/${artistId}`,
+                    {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                );
+                setIsFollowing(followStatus.status === 'following');
+            } catch (err) {
+                console.error('Error fetching follow status:', err);
+                setError('Error fetching follow status');
+            }
+        };
+
+        if (loggedInUserId) fetchFollowStatus();
+    }, [artistId, loggedInUserId, authToken]);
+
+    const handleFollowToggle = async () => {
+        if (!authToken) {
+            console.error('Token is missing. Cannot follow or unfollow.');
+            return;
+        }
+
+        try {
+            if (isFollowing) {
+                // Unfollow the artist
+                await axios.post(
+                    `${apiUrl}/follow/user/${loggedInUserId}/unfollow/${artistId}`,
+                    {},
+                    {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                );
+                setIsFollowing(false);
+            } else {
+                // Follow the artist
+                await axios.post(
+                    `${apiUrl}/follow/user/${loggedInUserId}/follower/${artistId}`,
+                    {},
+                    {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                );
+                setIsFollowing(true);
+            }
+        } catch (err) {
+            console.error('Error toggling follow status:', err);
+            alert('Failed to update follow status. Please try again.');
+        }
+    };
 
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -55,14 +126,15 @@ const ArtistPage = () => {
 
     const handleDelete = async () => {
         try {
-            // Show confirmation dialog
             const isConfirmed = window.confirm(
                 'Are you sure you want to delete this artist? This action cannot be undone.'
             );
 
             if (isConfirmed) {
-                await axios.delete(`${apiUrl}/artists/${artistId}`);
-                navigate('/artist'); // Redirect to main artist page after deletion
+                await axios.delete(`${apiUrl}/artists/${artistId}`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+                navigate('/artist');
             }
         } catch (err) {
             console.error('Error deleting artist:', err);
@@ -101,6 +173,13 @@ const ArtistPage = () => {
                         {artist.awards && <span>Awards: {artist.awards}</span>}
                     </p>
                 </div>
+
+                <button
+                    className={`follow-button ${isFollowing ? 'following' : 'follow'}`}
+                    onClick={handleFollowToggle}
+                >
+                    {isFollowing ? 'Following' : 'Follow'}
+                </button>
             </div>
 
             <div className="albums-section">
@@ -132,7 +211,6 @@ const ArtistPage = () => {
             </div>
 
             <div className="action-buttons">
-                {/* Conditionally render buttons based on authorization */}
                 {isAuthorized && (
                     <>
                         <button className="upload">
