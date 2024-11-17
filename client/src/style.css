@@ -9,46 +9,128 @@
     align-items: center;
 }
 
-.navbar {
+/* Parent container to ensure proper alignment */
+.row-container, .song-row {
+    position: relative; /* Ensure absolute positioning works properly */
+}
+
+/* Style for the actions container */
+.song-actions {
     display: flex;
-    justify-content: space-between; /* Left and right alignment */
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #333;
+    align-items: center; /* Vertically center buttons */
+    justify-content: flex-start; /* Align buttons to the left */
+    gap: 10px; /* Spacing between buttons */
+    position: absolute; /* Position relative to the parent container */
+    top: 50%; /* Center vertically within the parent */
+    left: 65%; /* Adjust alignment for 'Plays' and 'Duration' */
+    transform: translateY(-50%); /* Fine-tune vertical centering */
+}
+
+/* Like button */
+.like-button {
+    font-size: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: gray; /* Default color for unliked state */
+    transition: color 0.2s ease; /* Smooth color transition */
+}
+
+.like-button.liked {
+    color: red; /* Heart color for liked state */
+}
+
+.like-button:hover {
+    color: darkred; /* Slightly darker shade when hovering */
+}
+
+/* Play button */
+.play-button {
+    padding: 8px 12px; /* Adjusted padding for uniform size */
+    background-color: red;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
     color: white;
-    position: relative; /* Ensures elements can be positioned inside the navbar */
+    font-weight: bold;
+    margin-left: 130px;
+    transition: background-color 0.2s ease;
 }
 
-.navbar .navbar-left {
-    flex: 10; /* Push the content to the left */
+.play-button:hover {
+    background-color: darkred;
 }
 
-.navbar .navbar-right {
-    display: flex;
-    justify-content: flex-end; /* Aligns content to the right */
-    align-items: center; /* Align items vertically */
-    position: absolute; /* Position it relative to the navbar */
-    right: -820px; /* Align to the right with some padding */
-    top: 100%; /* Center vertically within the navbar */
-    transform: translateY(-50%); /* Adjust vertical centering */
-}
-
-.navbar .navbar-right span {
-    margin-right: 10px; /* Add spacing between the "Welcome" message and the button */
-}
-
-.navbar .logout-button {
-    background-color: #f44336;
+/* Report button */
+.report-button {
+    padding: 5px 10px; /* Adjust padding for consistency */
+    background-color: orange;
     color: white;
     border: none;
-    padding: 8px 12px;
+    border-radius: 5px; /* Fix invalid negative border-radius */
     cursor: pointer;
-    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
 }
 
-.navbar .logout-button:hover {
-    background-color: #d32f2f;
+.report-button:hover {
+    background-color: darkorange;
 }
+
+
+
+
+
+.follow-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.follow-button.follow {
+    background-color: #1db954; /* Spotify green for Follow */
+}
+
+.follow-button.following {
+    background-color: #005c2c; /* Darker green for Following */
+}
+
+.follow-button:hover {
+    opacity: 0.9;
+}
+
+
+.navbar-right {
+    display: flex; /* Use flexbox for alignment */
+    align-items: center; /* Vertically align items */
+    justify-content: flex-end; /* Push all items to the right */
+    gap: 15px; /* Add spacing between items */
+    margin-left: 1200px; /* Push the entire container to the right */
+}
+
+.navbar-right span {
+    margin-right: 15px; /* Add extra spacing to the "Welcome" message */
+}
+
+.navbar-right .logout-button {
+    padding: 5px 10px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.navbar-right .logout-button:hover {
+    background-color: darkred;
+}
+
+
 
 
 

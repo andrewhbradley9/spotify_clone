@@ -4,9 +4,13 @@ import cron from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
 import authRoute from './routes/authRoute.js';
 import songRoutes from './routes/songRoutes.js';
+import followerRoute from './routes/followerRoute.js'
 import multer from 'multer';
 import path from 'path';
 import dotenv from 'dotenv';
+
+import  { authenticateToken } from './middlewares/authMiddleware.js';
+
 
 dotenv.config();
 
@@ -16,6 +20,13 @@ const PORT = process.env.PORT || 3360;
 // Middleware
 app.use(cors());
 app.use(express.json()); // To parse JSON requests
+
+app.use((req, res, next) => {
+    console.log(`Received ${req.method} request on ${req.url}`);
+    next();
+});
+
+
 
 // Serve static files from the React app's build directory
 const __dirname = path.resolve(); // Ensures compatibility with ES modules
@@ -37,11 +48,12 @@ cron.schedule('0 0 1 * *', () => {
 app.use('/artists', artistRoutes); // Artist routes
 app.use('/auth', authRoute); // Authentication routes
 app.use('/song', songRoutes); // Song routes
+app.use('/follow', followerRoute); // follower routes
 
 // Serve React app for all unknown routes
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-});
+// app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+// });
 
 // Root endpoint (optional)
 app.get('/', (req, res) => {

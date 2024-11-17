@@ -12,6 +12,7 @@ import ArtistPage from "./pages/ArtistPage";
 import { AudioProvider } from "./context/AudioContext";
 import AudioPlayer from "./components/AudioPlayer";
 import Navbar from "./components/Navbar";
+import AdminDashboard from './pages/AdminDashboard';
 
 import "./style.css";
 
@@ -37,6 +38,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/artist/:artistId" element={<ArtistPage />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
           </Routes>
 
           {/* Show AudioPlayer on all pages except login and register */}
