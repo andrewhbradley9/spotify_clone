@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const apiUrl = process.env.REACT_APP_API_URL;
 const getCurrentMonthRange = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -13,98 +12,75 @@ const getCurrentMonthRange = () => {
     };
 };
 
-const getMonthRange = (year, month) => {
-    const start = new Date(year, month, 1);
-    const end = new Date(year, month + 1, 0);
-    return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
-    };
-};
-
-const getPastYearRange = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth(), 0);
-    return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
-    };
-};
-
 const AdminReports = () => {
-    const [totalUsers, setTotalUsers] = useState(null);
-    const [totalUsersUpToDate, setTotalUsersUpToDate] = useState(null);
-    const [totalActiveSubscribers, setTotalActiveSubscribers] = useState(0);
-    const [activeSubscribers, setActiveSubscribers] = useState(0);
-    const [inactiveSubscribers, setInactiveSubscribers] = useState(0);
-    const [userDisplayOption, setUserDisplayOption] = useState("newUsers");
-
-    const { startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
-    const [startDate, setStartDate] = useState(defaultStartDate);
-    const [endDate, setEndDate] = useState(defaultEndDate);
-
-
-    useEffect(() => {
-        const fetchUserData = async () => {
-            if (userDisplayOption === "newUsers" && startDate && endDate) {
-                try {
-                    const userRes = await axios.get(`http://localhost:3360/artists/all/users`, {
-                        params: { startDate, endDate },
-                    });
-                    setTotalUsers(userRes.data.total_users || 0);
-                } catch (err) {
-                    console.log("Error fetching user data:", err);
-                }
-            } else if (userDisplayOption === "usersUpToDate" && endDate) {
-                try {
-                    const totalUserRes = await axios.get(`http://localhost:3360/artists/all/users`, {
-                        params: { endDate },
-                    });
-                    setTotalUsersUpToDate(totalUserRes.data.total_users_up_to_date || 0);
-                } catch (err) {
-                    console.log("Error fetching total users up to date:", err);
-                }
-            }
-        };
-
-        const fetchSubscriberData = async () => {
-            if (startDate && endDate) {
-                try {
-                    const subscriberRes = await axios.get(`http://localhost:3360/artists/all/subscribers`, {
-                        params: { startDate, endDate },
-                    });
-                    setActiveSubscribers(subscriberRes.data.active_subscribers || 0);
-                    setInactiveSubscribers(subscriberRes.data.inactive_subscribers || 0);
-                } catch (err) {
-                    console.log("Error fetching subscriber data:", err);
-                }
-            }
-        };
-
-        const fetchTotalActiveSubscribers = async () => {
-            if (endDate) {
-                try {
-                    const activeRes = await axios.get(`http://localhost:3360/artists/all/subscribers`, {
-                        params: { endDate, mode: 'cumulative' },
-                    });
-                    console.log("Total Active Subscribers Response:", activeRes.data);
-                    setTotalActiveSubscribers(activeRes.data.total_active_subscribers || 0);
-                } catch (err) {
-                    console.log("Error fetching total active subscribers:", err);
-                }
-            }
-        };
-
-        fetchUserData();
-        fetchSubscriberData();
-        fetchTotalActiveSubscribers();
-    }, [startDate, endDate, userDisplayOption]);
-
     const navigate = useNavigate();
-    const handleGoHome = () => {
-        navigate('/artist');
+
+    // States
+    const [data, setData] = useState({
+        totalUsers: 0,
+        totalUsersUpToDate: 0,
+        users: [],
+        allUsers: [],
+        totalActiveSubscribers: 0,
+        inactiveSubscribers: 0,
+        newActiveSubscribers: 0,
+        subscribers: [],
+    });
+    const [show, setShow] = useState({
+        users: false,
+        allUsers: false,
+        subscribers: false,
+    });
+
+    const { startDate, endDate } = getCurrentMonthRange();
+    const [dateRange, setDateRange] = useState({ startDate, endDate });
+
+    // Fetch data from backend
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const userRes = await axios.get(`http://localhost:3360/artists/all/users`, {
+                    params: { startDate: dateRange.startDate, endDate: dateRange.endDate },
+                });
+                const userUpToDateRes = await axios.get(`http://localhost:3360/artists/all/users`, {
+                    params: { endDate: dateRange.endDate },
+                });
+                const subscriberRes = await axios.get(`http://localhost:3360/artists/all/subscribers`, {
+                    params: { startDate: dateRange.startDate, endDate: dateRange.endDate },
+                });
+                const activeRes = await axios.get(`http://localhost:3360/artists/all/subscribers`, {
+                    params: { endDate: dateRange.endDate, mode: 'cumulative' },
+                });
+
+                setData({
+                    totalUsers: userRes.data.total_users || 0,
+                    users: userRes.data.users || [],
+                    totalUsersUpToDate: userUpToDateRes.data.total_users_up_to_date || 0,
+                    allUsers: userUpToDateRes.data.users || [],
+                    subscribers: subscriberRes.data.users || [],
+                    inactiveSubscribers: subscriberRes.data.inactive_subscribers || 0,
+                    newActiveSubscribers: subscriberRes.data.new_active_subscribers || 0,
+                    totalActiveSubscribers: activeRes.data.total_active_subscribers || 0,
+                });
+            } catch (err) {
+                console.error('Error fetching data:', err);
+            }
+        };
+
+        fetchData();
+    }, [dateRange]);
+
+    // Handlers
+    const toggleShow = (key) => {
+        setShow((prev) => ({
+            ...prev,
+            [key]: !prev[key], // Correctly toggle the specific key
+        }));
     };
+
+    const handleGoHome = () => navigate('/artist');
+    const handleDateChange = (key, value) =>
+        setDateRange((prev) => ({ ...prev, [key]: value }));
 
     return (
         <div>
@@ -116,40 +92,75 @@ const AdminReports = () => {
                 <div>
                     <label>
                         Start Date:
-                        <input type="date" value={startDate} onChange={(e) =>
- setStartDate(e.target.value)} />
+                        <input
+                            type="date"
+                            value={dateRange.startDate}
+                            onChange={(e) => handleDateChange('startDate', e.target.value)}
+                        />
                     </label>
                     <label>
                         End Date:
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    </label>
-                    <label>
-                        <p>User Display Option:</p>
-                        <select value={userDisplayOption} onChange={(e) => setUserDisplayOption(e.target.value)}>
-                            <option value="newUsers">Total New Users</option>
-                            <option value="usersUpToDate">Total Users</option>
-                        </select>
+                        <input
+                            type="date"
+                            value={dateRange.endDate}
+                            onChange={(e) => handleDateChange('endDate', e.target.value)}
+                        />
                     </label>
                 </div>
+
                 <div>
-                    {userDisplayOption === "newUsers" ? (
-                        <p>Total New Users: {totalUsers !== null ? totalUsers : 'Loading...'}</p>
-                    ) : (
-                        <p>Total Users: {totalUsersUpToDate !== null ? totalUsersUpToDate : 'Loading...'}</p>
+                    <p>Total New Users: {data.totalUsers}</p>
+                    <button onClick={() => toggleShow('users')}>
+                        {show.users ? 'Hide Users' : 'View Users'}
+                    </button>
+                    {show.users && (
+                        <ul>
+                            {data.users.map((user) => (
+                                <li key={user.user_id}>
+                                    <strong>{user.username}</strong> (Role: {user.role || 'N/A'})
+                                </li>
+                            ))}
+                        </ul>
                     )}
-                    <label>
-                        <p>Subscriber Display Option:</p>
-                        <select value={userDisplayOption} onChange={(e) => setUserDisplayOption(e.target.value)}>
-                            <option value="activeSubscribers">Total New Active Subscribers</option>
-                            <option value="totalActiveSubscribers">Total Active Subscribers</option>
-                        </select>
-                    </label>
-                    {userDisplayOption === "activeSubscribers" ? (
-                        <p>Total New Active Subscribers: {activeSubscribers !== null ? activeSubscribers : 'Loading...'}</p>
-                    ) : (
-                        <p>Total Active Subscribers: {totalActiveSubscribers !== null ? totalActiveSubscribers : 'Loading...'}</p>
+                </div>
+
+                <div>
+                    <p>Total Users Up to Date: {data.totalUsersUpToDate}</p>
+                    <button onClick={() => toggleShow('allUsers')}>
+                        {show.allUsers ? 'Hide Users Up to Date' : 'View Users Up to Date'}
+                    </button>
+                    {show.allUsers && (
+                        <ul>
+                            {data.allUsers.map((user) => (
+                                <li key={user.user_id}>
+                                    <strong>{user.username}</strong> (Role: {user.role || 'N/A'})
+                                </li>
+                            ))}
+                        </ul>
                     )}
-                    <p>Inactive Subscribers: {inactiveSubscribers}</p>
+                </div>
+
+                <h2>Subscriber Report</h2>
+                <div>
+                    <p>New Active Subscribers (This Period): {data.newActiveSubscribers}</p>
+                    <button onClick={() => toggleShow('subscribers')}>
+                        {show.subscribers ? 'Hide Subscribers' : 'View Subscribers'}
+                    </button>
+                    {show.subscribers && (
+                        <ul>
+                            {data.subscribers.map((subscriber) => (
+                                <li key={subscriber.user_id}>
+                                    <strong>{subscriber.username}</strong> (Role: {subscriber.role || 'N/A'})<br />
+                                    Created At: {new Date(subscriber.created_at).toLocaleString()}<br />
+                                    Subscription Date: {subscriber.subscription_date
+                                        ? new Date(subscriber.subscription_date).toLocaleString()
+                                        : 'N/A'}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    <p>Active Subscribers (Cumulative): {data.totalActiveSubscribers}</p>
+                    <p>Inactive Subscribers: {data.inactiveSubscribers}</p>
                 </div>
             </section>
         </div>

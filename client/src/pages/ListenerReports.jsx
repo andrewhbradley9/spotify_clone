@@ -25,24 +25,7 @@ const getCurrentMonthRange = () => {
     };
 };
 
-const getMonthRange = (year, month) => {
-    const start = new Date(year, month, 1);
-    const end = new Date(year, month + 1, 0);
-    return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
-    };
-};
 
-const getPastYearRange = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth(), 0);
-    return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
-    };
-};
 
 const ListenerReports = () => {
     const [topSongs, setTopSongs] = useState([]);
@@ -55,27 +38,6 @@ const ListenerReports = () => {
     const [startDate, setStartDate] = useState(defaultStartDate);
     const [endDate, setEndDate] = useState(defaultEndDate);
     const [dateRangeOption, setDateRangeOption] = useState("currentMonth");
-    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-
-    const handleDateRangeChange = (option) => {
-        setDateRangeOption(option);
-        if (option === "currentMonth") {
-            const currentMonthRange = getCurrentMonthRange();
-            setStartDate(currentMonthRange.startDate);
-            setEndDate(currentMonthRange.endDate);
-        } else if (option === "pastYear") {
-            const pastYearRange = getPastYearRange();
-            setStartDate(pastYearRange.startDate);
-            setEndDate(pastYearRange.endDate);
-        }
-    };
-
-    const handleMonthChange = (month) => {
-        setSelectedMonth(month);
-        const { startDate, endDate } = getMonthRange(new Date().getFullYear(), month);
-        setStartDate(startDate);
-        setEndDate(endDate);
-    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -120,11 +82,6 @@ const ListenerReports = () => {
         fetchData();
     }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption]); 
     
-    // Month names for display in the dropdown
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June", 
-        "July", "August", "September", "October", "November", "December"
-    ];
     const genreData = {
         labels: mostPlayedGenres.map(genre => genre.genre_type),
         datasets: [
@@ -190,45 +147,15 @@ const ListenerReports = () => {
         <div>
             <button className="cancel" onClick={handleGoHome}>Home</button>
             <h1>Monthly Reports</h1>
-
             <section>
-                <h2>Date Range</h2>
+                <h2>Top Songs</h2>
                 <label>
-                    <p>Select Date Range:</p>
-                    <select value={dateRangeOption} onChange={(e) => handleDateRangeChange(e.target.value)}>
-                        <option value="currentMonth">Current Month</option>
-                        <option value="pastMonth">Past Month</option>
-                        <option value="pastYear">Past Year</option>
-                    </select>
-                </label>
-
-                {dateRangeOption === "pastMonth" && (
-                    <label>
-                        <p>Select Month:</p>
-                        <select value={selectedMonth} onChange={(e) => handleMonthChange(parseInt(e.target.value))}>
-                            {monthNames.map((month, index) => (
-                                <option key={index} value={index}>{month}</option>
-                            ))}
-                        </select>
-                    </label>
-                )}
-            </section>
-            <section>
-                <h2>Top Songs for {dateRangeOption === "pastMonth" && monthNames[selectedMonth]}</h2>
-                <label>
-                    <p>Song Limit:</p>
+                    <p> Limit:</p>
                     <input
                         type="number"
                         value={songLimit}
                         onChange={(e) => setSongLimit(parseInt(e.target.value) || 10)}
                     />
-                </label>
-                <label>
-                    <p>Sort Order:</p>
-                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                        <option value="most">Most</option>
-                        <option value="least">Least</option>
-                    </select>
                 </label>
                 {topSongs.length > 0 ? (
                     <ul>
@@ -249,7 +176,7 @@ const ListenerReports = () => {
 
 
             <section>
-                <h2>Top Artists for {dateRangeOption === "pastMonth" && monthNames[selectedMonth]}</h2>
+                <h2>Top Artists</h2>
                 <label>
                     <p>Artist Limit:</p>
                     <input
@@ -257,13 +184,6 @@ const ListenerReports = () => {
                         value={artistLimit}
                         onChange={(e) => setArtistLimit(parseInt(e.target.value) || 10)}
                     />
-                </label>
-                <label>
-                    <p>Sort Order:</p>
-                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                        <option value="most">Most</option>
-                        <option value="least">Least</option>
-                    </select>
                 </label>
                 <ul>
                 {topArtists.map(artist => (
@@ -278,7 +198,7 @@ const ListenerReports = () => {
             </section>
 
             <section>
-                <h2>Most Played Genres for {dateRangeOption === "pastMonth" && monthNames[selectedMonth]}</h2>
+                <h2>Most Played Genres</h2>
                 {mostPlayedGenres.length > 0 ? (
                     <div className="chart-container">
                         <Pie data={genreData} />

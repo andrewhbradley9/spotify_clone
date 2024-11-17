@@ -927,33 +927,41 @@ router.get('/song-likes/:song_id', (req, res) => {
 });
 
   
-  router.get('/all/users', (req, res) => {
+router.get('/all/users', (req, res) => {
     const { startDate, endDate } = req.query;
 
-    // Ensure 'endDate' is always provided
+    // Validate required parameters
     if (!endDate) {
-        return res.status(400).json({ error: "Please provide endDate in 'YYYY-MM-DD' format." });
+        return res.status(400).json({ error: "Please provide 'endDate' in 'YYYY-MM-DD' format." });
     }
 
-    // Initialize variables for query and parameters
-    let query, params;
+    // Define query and parameters
+    let query;
+    const params = startDate
+        ? [startDate, endDate]
+        : [endDate];
 
     if (startDate) {
-        // Case 1: Fetch users within a specific date range (from startDate to endDate)
+        // Query for users within a specific date range
         query = `
-            SELECT COUNT(user_id) AS total_users, MAX(user_id) AS last_user_id
+            SELECT 
+                user_id, username, created_at, role, subscription_date, email,
+                COUNT(user_id) AS total_users,
+                MAX(user_id) AS last_user_id
             FROM User
             WHERE created_at BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)
+            GROUP BY user_id, username, created_at, role, subscription_date, email
         `;
-        params = [startDate, endDate];
     } else {
-        // Case 2: Fetch all users up to the specified endDate
+        // Query for all users up to the specified endDate
         query = `
-            SELECT COUNT(user_id) AS total_users_up_to_date
+            SELECT 
+                user_id, username, created_at, role, subscription_date, email,
+                COUNT(user_id) AS total_users_up_to_date
             FROM User
             WHERE created_at <= DATE_ADD(?, INTERVAL 1 DAY)
+            GROUP BY user_id, username, created_at, role, subscription_date, email
         `;
-        params = [endDate];
     }
 
     // Execute the query
@@ -963,19 +971,35 @@ router.get('/song-likes/:song_id', (req, res) => {
             return res.status(500).json({ error: 'Internal Server Error' });
         }
 
-        // Send response based on whether a startDate was provided
-        if (startDate) {
-            res.json({
+        // Structure the response based on query type
+        const response = startDate
+            ? {
                 startDate,
                 endDate,
-                total_users: results[0].total_users || 0,
-                last_user_id: results[0].last_user_id || null,
-            });
-        } else {
-            res.json({
-                total_users_up_to_date: results[0].total_users_up_to_date || 0,
-            });
-        }
+                total_users: results.length,
+                users: results.map(user => ({
+                    user_id: user.user_id,
+                    username: user.username,
+                    created_at: user.created_at,
+                    role: user.role,
+                    subscription_date: user.subscription_date,
+                    email: user.email,
+                })),
+                last_user_id: results[0]?.last_user_id || null,
+            }
+            : {
+                total_users_up_to_date: results.length,
+                users: results.map(user => ({
+                    user_id: user.user_id,
+                    username: user.username,
+                    created_at: user.created_at,
+                    role: user.role,
+                    subscription_date: user.subscription_date,
+                    email: user.email,
+                })),
+            };
+
+        res.json(response);
     });
 });
 
@@ -986,76 +1010,95 @@ router.get('/all/subscribers', (req, res) => {
         return res.status(400).json({ error: "Please provide endDate in 'YYYY-MM-DD' format." });
     }
 
-    // Step 1: Check if any users were created on or before endDate
-    const checkUsersExistQuery = `
-        SELECT COUNT(user_id) AS total_users_up_to_date
+    const baseQuery = `
+        SELECT COUNT(user_id) AS total_users_up_to_date,
+        user_id, username, email, created_at, subscription_date, role
         FROM User
         WHERE created_at <= DATE_ADD(?, INTERVAL 1 DAY)
     `;
 
-    db.query(checkUsersExistQuery, [endDate], (err, userCountResults) => {
+    db.query(baseQuery, [endDate], (err, userCountResults) => {
         if (err) {
             console.error('Error checking user existence:', err);
             return res.status(500).json({ error: 'Internal Server Error' });
         }
 
-        const userCount = userCountResults[0].total_users_up_to_date;
+        const totalUsers = userCountResults[0]?.total_users_up_to_date || 0;
 
-        // If no users exist before or on endDate, return 0 for all subscription-related counts
-        if (userCount === 0) {
+        if (totalUsers === 0) {
             return res.json({
                 total_active_subscribers: 0,
                 active_subscribers: 0,
                 inactive_subscribers: 0,
+                new_active_subscribers: 0,
+                users: [],
             });
         }
 
-        // Step 2: Handle cumulative total for totalActiveSubscribers
         if (mode === 'cumulative') {
-            const queryTotalActiveSubscribers = `
-                SELECT COUNT(*) AS total_active_subscribers
+            const cumulativeQuery = `
+                SELECT user_id, username, email, created_at, subscription_date, role
                 FROM User
                 WHERE subscription_status = 'active' AND subscription_date <= ?
             `;
 
-            db.query(queryTotalActiveSubscribers, [endDate], (err, results) => {
+            return db.query(cumulativeQuery, [endDate], (err, results) => {
                 if (err) {
-                    console.error('Error fetching cumulative total active subscribers:', err);
+                    console.error('Error fetching cumulative active subscribers:', err);
                     return res.status(500).json({ error: 'Internal Server Error' });
                 }
 
-                return res.json({
-                    total_active_subscribers: results[0].total_active_subscribers || 0
-                });
-            });
-        } else {
-            // Step 3: Existing logic for fetching active and inactive subscribers within range
-            if (!startDate) {
-                return res.status(400).json({ error: "Please provide both startDate and endDate for range-based queries." });
-            }
-
-            const querySubscribers = `
-                SELECT 
-                    SUM(subscription_status = 'active' AND subscription_date BETWEEN ? AND ?) AS active_subscribers,
-                    SUM(
-                        subscription_status = 'inactive' OR 
-                        (subscription_status = 'active' AND subscription_date > ?)
-                    ) AS inactive_subscribers
-                FROM User
-            `;
-
-            db.query(querySubscribers, [startDate, endDate, endDate], (err, results) => {
-                if (err) {
-                    console.error('Error fetching active and inactive subscribers:', err);
-                    return res.status(500).json({ error: 'Internal Server Error' });
-                }
-
-                return res.json({
-                    active_subscribers: results[0].active_subscribers || 0,
-                    inactive_subscribers: results[0].inactive_subscribers || 0,
+                res.json({
+                    total_active_subscribers: results.length,
+                    new_active_subscribers: 0,
+                    users: results,
                 });
             });
         }
+
+        if (!startDate) {
+            return res.status(400).json({ error: "Please provide both startDate and endDate for range-based queries." });
+        }
+
+        const rangeQuery = `
+            SELECT 
+                user_id, username, email, created_at, subscription_date, role,
+                SUM(subscription_status = 'active' AND subscription_date BETWEEN ? AND ?) AS active_subscribers,
+                SUM(subscription_status = 'inactive' OR (subscription_status = 'active' AND subscription_date > ?)) AS inactive_subscribers
+            FROM User
+        `;
+
+        const newActiveQuery = `
+            SELECT user_id, username, email, created_at, subscription_date, role
+            FROM User
+            WHERE subscription_status = 'active' AND subscription_date BETWEEN ? AND ?
+        `;
+
+        db.query(rangeQuery, [startDate, endDate, endDate, startDate, endDate], (err, rangeResults) => {
+            if (err) {
+                console.error('Error fetching subscribers:', err);
+                return res.status(500).json({ error: 'Internal Server Error' });
+            }
+        
+            console.log("Range Query Results:", rangeResults);
+        
+            db.query(newActiveQuery, [startDate, endDate], (err, newActiveResults) => {
+                if (err) {
+                    console.error('Error fetching new active subscribers:', err);
+                    return res.status(500).json({ error: 'Internal Server Error' });
+                }
+        
+                console.log("New Active Query Results:", newActiveResults);
+        
+                res.json({
+                    active_subscribers: rangeResults[0]?.active_subscribers || 0,
+                    inactive_subscribers: rangeResults[0]?.inactive_subscribers || 0,
+                    new_active_subscribers: newActiveResults.length,
+                    users: newActiveResults,
+                });
+            });
+        });
+        
     });
 });
 
