@@ -945,22 +945,38 @@ router.get('/all/users', (req, res) => {
         // Query for users within a specific date range
         query = `
             SELECT 
-                user_id, username, created_at, role, subscription_date, email,
-                COUNT(user_id) AS total_users,
-                MAX(user_id) AS last_user_id
-            FROM User
-            WHERE created_at BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)
-            GROUP BY user_id, username, created_at, role, subscription_date, email
+                u.user_id, 
+                u.username, 
+                u.created_at, 
+                u.role, 
+                u.subscription_date, 
+                u.email, 
+                a.artist_id,
+                a.artistname,
+                COUNT(u.user_id) AS total_users,
+                MAX(u.user_id) AS last_user_id
+            FROM User u
+            LEFT JOIN artist a ON u.user_id = a.user_id
+            WHERE u.created_at BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)
+            GROUP BY u.user_id, u.username, u.created_at, u.role, u.subscription_date, u.email, a.artist_id
         `;
     } else {
         // Query for all users up to the specified endDate
         query = `
             SELECT 
-                user_id, username, created_at, role, subscription_date, email,
-                COUNT(user_id) AS total_users_up_to_date
-            FROM User
-            WHERE created_at <= DATE_ADD(?, INTERVAL 1 DAY)
-            GROUP BY user_id, username, created_at, role, subscription_date, email
+                u.user_id, 
+                u.username, 
+                u.created_at, 
+                u.role, 
+                u.subscription_date, 
+                u.email, 
+                a.artist_id,
+                a.artistname,
+                COUNT(u.user_id) AS total_users_up_to_date
+            FROM User u
+            LEFT JOIN artist a ON u.user_id = a.user_id
+            WHERE u.created_at <= DATE_ADD(?, INTERVAL 1 DAY)
+            GROUP BY u.user_id, u.username, u.created_at, u.role, u.subscription_date, u.email, a.artist_id
         `;
     }
 
@@ -984,6 +1000,7 @@ router.get('/all/users', (req, res) => {
                     role: user.role,
                     subscription_date: user.subscription_date,
                     email: user.email,
+                    artist_id: user.artist_id || null, // Include artist_id, if available
                 })),
                 last_user_id: results[0]?.last_user_id || null,
             }
@@ -996,12 +1013,14 @@ router.get('/all/users', (req, res) => {
                     role: user.role,
                     subscription_date: user.subscription_date,
                     email: user.email,
+                    artist_id: user.artist_id || null, // Include artist_id, if available
                 })),
             };
 
         res.json(response);
     });
 });
+
 
 router.get('/all/subscribers', (req, res) => {
     const { startDate, endDate, mode } = req.query;
@@ -1011,10 +1030,8 @@ router.get('/all/subscribers', (req, res) => {
     }
 
     const baseQuery = `
-        SELECT COUNT(user_id) AS total_users_up_to_date,
-        user_id, username, email, created_at, subscription_date, role
-        FROM User
-        WHERE created_at <= DATE_ADD(?, INTERVAL 1 DAY)
+        SELECT COUNT(u.user_id) AS total_users_up_to_date
+        FROM User u
     `;
 
     db.query(baseQuery, [endDate], (err, userCountResults) => {
@@ -1032,14 +1049,19 @@ router.get('/all/subscribers', (req, res) => {
                 inactive_subscribers: 0,
                 new_active_subscribers: 0,
                 users: [],
+                inactive_users: [],
             });
         }
 
+        // Handle cumulative query mode
         if (mode === 'cumulative') {
             const cumulativeQuery = `
-                SELECT user_id, username, email, created_at, subscription_date, role
-                FROM User
-                WHERE subscription_status = 'active' AND subscription_date <= ?
+                SELECT 
+                    u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                    a.artist_id, a.artistname
+                FROM User u
+                LEFT JOIN artist a ON u.user_id = a.user_id
+                WHERE u.subscription_status = 'active' AND u.subscription_date <= ?
             `;
 
             return db.query(cumulativeQuery, [endDate], (err, results) => {
@@ -1056,51 +1078,94 @@ router.get('/all/subscribers', (req, res) => {
             });
         }
 
+        // Handle inactive query mode
+        if (mode === 'inactive') {
+            const inactiveQuery = `
+                SELECT 
+                    u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                    a.artist_id, a.artistname
+                FROM User u
+                LEFT JOIN artist a ON u.user_id = a.user_id
+                WHERE u.subscription_status = 'inactive' OR (u.subscription_status = 'active' AND u.subscription_date > ?)
+            `;
+
+            return db.query(inactiveQuery, [endDate], (err, results) => {
+                if (err) {
+                    console.error('Error fetching inactive subscribers:', err);
+                    return res.status(500).json({ error: 'Internal Server Error' });
+                }
+
+                res.json({
+                    inactive_subscribers: results,
+                });
+            });
+        }
+
+        // Validate range queries require both startDate and endDate
         if (!startDate) {
             return res.status(400).json({ error: "Please provide both startDate and endDate for range-based queries." });
         }
 
+        // Query for active/inactive counts in the range
         const rangeQuery = `
             SELECT 
-                user_id, username, email, created_at, subscription_date, role,
-                SUM(subscription_status = 'active' AND subscription_date BETWEEN ? AND ?) AS active_subscribers,
-                SUM(subscription_status = 'inactive' OR (subscription_status = 'active' AND subscription_date > ?)) AS inactive_subscribers
-            FROM User
+                SUM(u.subscription_status = 'active' AND u.subscription_date BETWEEN ? AND ?) AS active_subscribers,
+                SUM(u.subscription_status = 'inactive' OR (u.subscription_status = 'active' AND u.subscription_date > ?)) AS inactive_subscribers
+            FROM User u
         `;
 
+        // Query for new active subscribers in the range
         const newActiveQuery = `
-            SELECT user_id, username, email, created_at, subscription_date, role
-            FROM User
-            WHERE subscription_status = 'active' AND subscription_date BETWEEN ? AND ?
+            SELECT 
+                u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                a.artist_id, a.artistname
+            FROM User u
+            LEFT JOIN artist a ON u.user_id = a.user_id
+            WHERE u.subscription_status = 'active' AND u.subscription_date BETWEEN ? AND ?
         `;
 
-        db.query(rangeQuery, [startDate, endDate, endDate, startDate, endDate], (err, rangeResults) => {
+        // Query for inactive user details in the range
+        const inactiveQuery = `
+            SELECT 
+                u.user_id, u.username, u.email, u.created_at, u.subscription_date, u.role,
+                a.artist_id, a.artistname
+            FROM User u
+            LEFT JOIN artist a ON u.user_id = a.user_id
+            WHERE u.subscription_status = 'inactive' OR (u.subscription_status = 'active' AND u.subscription_date > ?)
+        `;
+
+        // Execute range queries
+        db.query(rangeQuery, [startDate, endDate, endDate], (err, rangeResults) => {
             if (err) {
                 console.error('Error fetching subscribers:', err);
                 return res.status(500).json({ error: 'Internal Server Error' });
             }
-        
-            console.log("Range Query Results:", rangeResults);
-        
+
             db.query(newActiveQuery, [startDate, endDate], (err, newActiveResults) => {
                 if (err) {
                     console.error('Error fetching new active subscribers:', err);
                     return res.status(500).json({ error: 'Internal Server Error' });
                 }
-        
-                console.log("New Active Query Results:", newActiveResults);
-        
-                res.json({
-                    active_subscribers: rangeResults[0]?.active_subscribers || 0,
-                    inactive_subscribers: rangeResults[0]?.inactive_subscribers || 0,
-                    new_active_subscribers: newActiveResults.length,
-                    users: newActiveResults,
+
+                db.query(inactiveQuery, [endDate], (err, inactiveResults) => {
+                    if (err) {
+                        console.error('Error fetching inactive subscribers:', err);
+                        return res.status(500).json({ error: 'Internal Server Error' });
+                    }
+
+                    res.json({
+                        active_subscribers: rangeResults[0]?.active_subscribers || 0,
+                        inactive_subscribers: rangeResults[0]?.inactive_subscribers || 0,
+                        new_active_subscribers: newActiveResults.length,
+                        users: newActiveResults,
+                        inactive_users: inactiveResults, // Add inactive user details here
+                    });
                 });
             });
         });
-        
     });
 });
+
 
 // Backend route to get artist information, albums, and songs
 router.get('/artist/:id', (req, res) => {

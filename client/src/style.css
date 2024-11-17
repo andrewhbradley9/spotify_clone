@@ -1229,6 +1229,247 @@ select:focus {
     margin-top: 10px;
 }
 
+.artist-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.artist-table th,
+.artist-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.artist-table thead th {
+    background-color: #ff4444;
+    color: white;
+    font-weight: bold;
+}
+
+.artist-table tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
+
+.artist-table tr:hover {
+    background-color: #f0f0f0;
+}
+
+.chart-container {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.chart-container h3 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.comparison-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group label {
+    font-weight: bold;
+    color: #333;
+}
+
+.input-group input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.comparison-form button {
+    padding: 10px 20px;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: fit-content;
+}
+
+.comparison-form button:hover {
+    background-color: #ff6666;
+}
+
+.comparison-toggle {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comparison-toggle input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.comparison-toggle label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #333;
+}
+
+.date-filter {
+    margin-bottom: 15px;
+    text-align: right;
+}
+
+.date-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.date-select:hover {
+    border-color: #999;
+}
+
+.date-select:focus {
+    outline: none;
+    border-color: #ff4444;
+    box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.2);
+}
+
+.reports {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    font-size: 14px;
+    margin: 5px;
+    background: #FF0000;
+    color: #FFFFFF;
+}
+
+.reports:hover {
+    background: #680000;
+    transform: translateY(-2px);
+}
+
+/* Update the ArtistReports page styles to match the theme */
+.artist-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: #343434;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    color: #FFFFFF;
+}
+
+.artist-table th,
+.artist-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #444444;
+}
+
+.artist-table thead th {
+    background-color: #FF0000;
+    color: white;
+    font-weight: bold;
+}
+
+.artist-table tr:nth-child(even) {
+    background-color: #404040;
+}
+
+.artist-table tr:hover {
+    background-color: #505050;
+}
+
+.chart-container {
+    margin-top: 40px;
+    padding: 20px;
+    background: #343434;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.chart-container h3 {
+    color: #FFFFFF;
+    margin-bottom: 20px;
+}
+
+.comparison-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 20px;
+    background: #343434;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.input-group label {
+    font-weight: bold;
+    color: #FFFFFF;
+}
+
+.input-group input {
+    padding: 8px;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 300px;
+    background: #282828;
+    color: #FFFFFF;
+}
+
+.comparison-toggle label {
+    color: #FFFFFF;
+}
+
+.date-select {
+    padding: 8px 12px;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    background: #282828;
+    color: #FFFFFF;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.date-select:hover {
+    border-color: #FF0000;
+}
+
+.date-select:focus {
+    outline: none;
+    border-color: #FF0000;
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
+}
 
 .loading p {
     font-size: 18px;
@@ -1320,4 +1561,59 @@ select:focus {
         margin-bottom: 10px;
     }
 }
+
+.table-container {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1e1e1e; /* Dark table background for contrast */
+    color: #fff; /* Default text color for table */
+    margin: 1rem 0;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-container th {
+    background-color: #af2020; /* Header background */
+    color: #fff; /* Header text color */
+    font-weight: bold;
+    text-align: left;
+    padding: 12px;
+    border-bottom: 2px solid #666;
+}
+
+.table-container td {
+    padding: 12px;
+    border-bottom: 1px solid #444; /* Border between rows */
+    text-align: left;
+}
+
+.table-container tr:nth-child(even) {
+    background-color: #2a2a2a; /* Alternating row color */
+}
+
+.table-container tr:hover {
+    background-color: #333; /* Row highlight on hover */
+    transition: background-color 0.3s ease;
+}
+
+.username-cell {
+    color: #e63946; /* Bright red for usernames */
+    font-weight: bold;
+}
+
+.role-cell {
+    color: #a8dadc; /* Light teal for roles */
+    font-weight: bold;
+}
+
+.date-cell {
+    color: #faeeee; /* Light color for dates */
+}
+
 

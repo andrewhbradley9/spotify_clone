@@ -1,14 +1,16 @@
 import express from 'express';
 import cors from 'cors';
-import cron from 'node-cron';
+import cron  from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
 import authRoute from './routes/authRoute.js';
-import songRoutes from './routes/songRoutes.js';
+//add multer and path
 import multer from 'multer';
 import path from 'path';
-import dotenv from 'dotenv';
 
+import dotenv from 'dotenv';
 dotenv.config();
+
+
 
 const app = express();
 const PORT = process.env.PORT || 3360;
@@ -17,11 +19,16 @@ const PORT = process.env.PORT || 3360;
 app.use(cors());
 app.use(express.json()); // To parse JSON requests
 
-// Serve static files from the React app's build directory
-const __dirname = path.resolve(); // Ensures compatibility with ES modules
-app.use(express.static(path.join(__dirname, 'client/build')));
-
-// Cron job for resetting play counts
+// Set Content Security Policy
+app.use((req, res, next) => {
+    res.setHeader("Content-Security-Policy", 
+        "default-src 'self'; " + // Allow resources from the same origin
+        "font-src 'self' http://localhost:3360 data:; " + // Allow fonts from your server and data URLs
+        "style-src 'self' 'unsafe-inline'; " + // Allow inline styles (use carefully)
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval';" // Allow inline scripts and eval (use carefully)
+    );
+    next();
+});
 cron.schedule('0 0 1 * *', () => {
     console.log('Running monthly play count reset...');
     db.query('UPDATE song SET play_count = 0 WHERE play_count > 0', (err, result) => {
@@ -32,21 +39,32 @@ cron.schedule('0 0 1 * *', () => {
         }
     });
 });
+// Use artist routes
+app.use('/artists', artistRoutes); // Ensure this matches your routes correctly
 
-// Routes
-app.use('/artists', artistRoutes); // Artist routes
-app.use('/auth', authRoute); // Authentication routes
-app.use('/song', songRoutes); // Song routes
+// Use artist routes
+app.use('/auth', authRoute);
 
-// Serve React app for all unknown routes
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-});
-
-// Root endpoint (optional)
 app.get('/', (req, res) => {
-    res.send("Backend is finally CI/CD + Andrew testing hehe");
+    res.send("Backend if finally CI/CD");
 });
+
+//change begin
+// Configure multer for file storage
+/*const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Create an 'uploads' directory in your server
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Add this after your middleware setup
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+//change end*/
 
 // Start the server
 app.listen(PORT, () => {
