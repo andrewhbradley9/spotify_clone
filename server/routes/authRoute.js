@@ -20,6 +20,7 @@ const db = mysql2.createPool({
 
 
 // Register endpoint
+// Register endpoint
 router.post('/register', async (req, res) => {
     const { username, password, email, role } = req.body;
 
@@ -59,9 +60,10 @@ router.post('/register', async (req, res) => {
 
         // If the user is an artist, also insert into the Artist table
         if (role === 'artist') {
+            const defaultGenre = 'Unknown'; // Default genre for new artists
             await db.query(
-                'INSERT INTO artist (name, user_id) VALUES (?, ?)',
-                [username, userId]
+                'INSERT INTO artist (artistname, genre_type, user_id) VALUES (?, ?, ?)',
+                [username, defaultGenre, userId]
             );
         }
 
@@ -77,6 +79,7 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ error: 'Server error. Please try again later.' });
     }
 });
+
 
 
 //Login route

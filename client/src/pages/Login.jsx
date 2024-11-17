@@ -21,9 +21,10 @@ const Login = () => {
             });
             alert('Login successful!');
             localStorage.setItem('token', response.data.token); // Store the token
-            localStorage.setItem('artistId', response.data.artistId); // Save artistId
-            localStorage.setItem('role', response.data.role);
-            localStorage.setItem('username', username); // Save username
+            localStorage.setItem('artistId', response.data.artistId); // Save artistId (if applicable)
+            localStorage.setItem('userId', response.data.userId); // Save userId
+            localStorage.setItem('role', response.data.role); // Save the user's role
+            localStorage.setItem('username', username); // Save username for reference
             navigate('/artist'); // Redirect to home or a protected route
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred. Please try again.');

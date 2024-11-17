@@ -7,7 +7,7 @@ const Navbar = () => {
 
     // Retrieve logged-in user information
     const username = localStorage.getItem('username');
-    const role = localStorage.getItem('role');
+    const role = localStorage.getItem('role'); // Retrieve role
 
     const handleLogout = () => {
         localStorage.clear(); // Clear all stored items
@@ -24,19 +24,30 @@ const Navbar = () => {
 
     return (
         <nav className="navbar">
-            <div className="navbar-right">
-                <Link to="/artist" className="logo">
-                    
+            <div className="navbar-left">
+                {/* Logo or Home link */}
+                <Link to="/" className="logo">
+                
                 </Link>
             </div>
+
             <div className="navbar-right">
-                {username && (
+                {username ? (
                     <>
-                        <span>Welcome, {username} ({role})</span>
+                        <span className="welcome-message">Welcome, {username} ({role})</span>
+                        {role === 'admin' && (
+                            <Link to="/admin-dashboard" className="admin-dashboard-link">
+                                Admin Dashboard
+                            </Link>
+                        )}
                         <button onClick={handleLogout} className="logout-button">
                             Logout
                         </button>
                     </>
+                ) : (
+                    <Link to="/login" className="login-button">
+                        Login
+                    </Link>
                 )}
             </div>
         </nav>

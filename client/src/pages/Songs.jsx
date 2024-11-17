@@ -2,40 +2,100 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
+
 const apiUrl = process.env.REACT_APP_API_URL;
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></link>
+
 const AlbumSongs = () => {
-    const { albumId, artistId } = useParams(); 
-    const navigate = useNavigate(); 
+    const { albumId, artistId } = useParams();
+    const navigate = useNavigate();
     const [songs, setSongs] = useState([]);
+    const [likedSongs, setLikedSongs] = useState(new Set());
     const [albumDetails, setAlbumDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { playSong } = useAudio();
+
+    const authToken = localStorage.getItem('token'); // Retrieve auth token for authenticated requests
 
     useEffect(() => {
         const fetchAlbumAndSongs = async () => {
             try {
                 const albumResponse = await axios.get(`${apiUrl}/artists/targetalbum/${albumId}`);
                 setAlbumDetails(albumResponse.data);
+
                 const songsResponse = await axios.get(`${apiUrl}/artists/albums/${albumId}/songs/${artistId}`);
                 setSongs(songsResponse.data);
+
+                // Fetch liked songs for the user
+                const { data: likes } = await axios.get(`${apiUrl}/song/likes`, {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                });
+                setLikedSongs(new Set(likes.map((like) => like.song_id)));
             } catch (err) {
-                setError('Error fetching album or songs');
+                setError('Error fetching album, songs, or likes');
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
         fetchAlbumAndSongs();
-    }, [albumId, artistId]);
+    }, [albumId, artistId, authToken]);
+
+    const handleLikeToggle = async (songId) => {
+        try {
+            if (likedSongs.has(songId)) {
+                // Unlike the song
+                await axios.delete(`${apiUrl}/song/like/${songId}`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+                setLikedSongs((prev) => {
+                    const updated = new Set(prev);
+                    updated.delete(songId);
+                    return updated;
+                });
+            } else {
+                // Like the song
+                await axios.post(
+                    `${apiUrl}/song/like/${songId}`,
+                    {},
+                    {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                );
+                setLikedSongs((prev) => new Set(prev).add(songId));
+            }
+        } catch (err) {
+            console.error('Error toggling like status:', err);
+            alert('Failed to update like status.');
+        }
+    };
+
+    const handleReportSong = async (songId) => {
+        try {
+            await axios.post(
+                `${apiUrl}/song/report/${songId}`,
+                {}, // No body needed
+                {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                }
+            );
+            alert('Song reported successfully.');
+        } catch (err) {
+            console.error('Error reporting song:', err);
+            alert('Failed to report the song.');
+        }
+    };
 
     const handleGoHome = () => {
-        navigate('/artist'); 
+        navigate('/artist');
     };
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'null'; 
+        if (!dateString) return 'null';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', options).replace(',', '');
@@ -89,7 +149,6 @@ const AlbumSongs = () => {
                                 <span>{albumDetails.total_duration ? formatDuration(albumDetails.total_duration) : '0s'}</span>
                             </div>
                         </div>
-                    
                     </div>
                 )}
             </div>
@@ -99,8 +158,9 @@ const AlbumSongs = () => {
                     <div className="song-header">
                         <span>#</span>
                         <span>Title</span>
+                        <span>Plays</span>
                         <span>Duration</span>
-                        <span></span>
+                        <span>Actions</span>
                     </div>
                     {songs.map((song, index) => (
                         <div key={song.song_id} className="song-row">
@@ -112,13 +172,28 @@ const AlbumSongs = () => {
                                     <p>{song.genre_type}</p>
                                 </div>
                             </div>
+                            <span className="song-plays">{song.play_count}</span>
                             <span className="song-duration">{song.duration}</span>
-                            <button 
-                                onClick={() => playSong({...song, album_id: albumId})} 
-                                className="play-button"
-                            >
-                                Play
-                            </button>
+                            <div className="song-actions">
+                                <button
+                                    onClick={() => playSong({ ...song, album_id: albumId })}
+                                    className="play-button"
+                                >
+                                    Play
+                                </button>
+                                <button
+                                    onClick={() => handleReportSong(song.song_id)}
+                                    className="report-button"
+                                >
+                                    Report
+                                </button>
+                                <button
+                                    onClick={() => handleLikeToggle(song.song_id)}
+                                    className={`like-button ${likedSongs.has(song.song_id) ? 'liked' : ''}`}
+                                >
+                                    {likedSongs.has(song.song_id) ? '❤️' : '🤍'}
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -126,17 +201,14 @@ const AlbumSongs = () => {
 
             <div className="navigation-buttons">
                 <Link to={`/albums/${artistId}`} className="nav-button">
-                    <span className="material-icons"></span>
                     Back to Albums
                 </Link>
                 <button onClick={handleGoHome} className="nav-button">
-                    <span className="material-icons"></span>
                     Back to Artists
                 </button>
                 <div className="album-actions">
-                    {/* Conditional rendering for Update Album button */}
                     {(localStorage.getItem('role') === 'admin' || localStorage.getItem('artistId') === String(artistId)) && (
-                        <button 
+                        <button
                             className="update-album"
                             onClick={() => navigate(`/uploadAlbum/${artistId}/${albumId}`)}
                         >
@@ -145,7 +217,6 @@ const AlbumSongs = () => {
                     )}
                 </div>
             </div>
-
         </div>
     );
 };

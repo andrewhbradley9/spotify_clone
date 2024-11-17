@@ -393,100 +393,100 @@ router.get('/show/recommendations', (req, res) => {
     });
 });
 
-// Follow Artist Endpoint
-router.post('/user/:id/follow', (req, res) => {
-    const userId = req.body.user_id;  // Assume user_id is sent in the request body
-    const artistId = req.params.id;
+// // Follow Artist Endpoint
+// router.post('/user/:id/follow', (req, res) => {
+//     const userId = req.body.user_id;  // Assume user_id is sent in the request body
+//     const artistId = req.params.id;
 
-    // SQL query to insert a new follow relationship
-    const query = `
-        INSERT INTO Followers (follow_date, status)
-        VALUES (?, ?, NOW(), 'active')
-        ON DUPLICATE KEY UPDATE status = 'active';`;  // Update if already following
+//     // SQL query to insert a new follow relationship
+//     const query = `
+//         INSERT INTO Followers (follow_date, status)
+//         VALUES (?, ?, NOW(), 'active')
+//         ON DUPLICATE KEY UPDATE status = 'active';`;  // Update if already following
 
-    db.execute(query, [userId, artistId], (error, results) => {
-        if (error) {
-            console.error(error);
-            return res.status(500).json({ message: 'Error following artist' });
-        }
+//     db.execute(query, [userId, artistId], (error, results) => {
+//         if (error) {
+//             console.error(error);
+//             return res.status(500).json({ message: 'Error following artist' });
+//         }
 
-        // Increment the follower count in the Artists table
-        const updateQuery = `
-            UPDATE Artists
-            SET follower_count = follower_count + 1
-            WHERE artist_id = ?;`;
+//         // Increment the follower count in the Artists table
+//         const updateQuery = `
+//             UPDATE Artists
+//             SET follower_count = follower_count + 1
+//             WHERE artist_id = ?;`;
 
-        db.execute(updateQuery, [artistId], (error) => {
-            if (error) {
-                console.error(error);
-                return res.status(500).json({ message: 'Error updating follower count' });
-            }
-            res.status(200).json({ message: 'Successfully followed artist' });
-        });
-    });
-});
+//         db.execute(updateQuery, [artistId], (error) => {
+//             if (error) {
+//                 console.error(error);
+//                 return res.status(500).json({ message: 'Error updating follower count' });
+//             }
+//             res.status(200).json({ message: 'Successfully followed artist' });
+//         });
+//     });
+// });
 
-// Unfollow Artist Endpoint
-router.delete('/user/:id/unfollow', (req, res) => {
-    const userId = req.body.user_id;  // Assume user_id is sent in the request body
-    const artistId = req.params.id;
+// // Unfollow Artist Endpoint
+// router.delete('/user/:id/unfollow', (req, res) => {
+//     const userId = req.body.user_id;  // Assume user_id is sent in the request body
+//     const artistId = req.params.id;
 
-    // SQL query to delete the follow relationship
-    const deleteQuery = `
-        DELETE FROM Followers 
-        WHERE followers_id = ? AND following_id = ?;`;
+//     // SQL query to delete the follow relationship
+//     const deleteQuery = `
+//         DELETE FROM Followers 
+//         WHERE followers_id = ? AND following_id = ?;`;
 
-    db.execute(deleteQuery, [userId, artistId], (error, results) => {
-        if (error) {
-            console.error(error);
-            return res.status(500).json({ message: 'Error unfollowing artist' });
-        }
+//     db.execute(deleteQuery, [userId, artistId], (error, results) => {
+//         if (error) {
+//             console.error(error);
+//             return res.status(500).json({ message: 'Error unfollowing artist' });
+//         }
         
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Follow relationship not found' });
-        }
+//         if (results.affectedRows === 0) {
+//             return res.status(404).json({ message: 'Follow relationship not found' });
+//         }
 
-        // Decrement the follower count in the Artists table
-        const updateQuery = `
-            UPDATE Artists
-            SET follower_count = follower_count - 1
-            WHERE artist_id = ?;`;
+//         // Decrement the follower count in the Artists table
+//         const updateQuery = `
+//             UPDATE Artists
+//             SET follower_count = follower_count - 1
+//             WHERE artist_id = ?;`;
 
-        db.execute(updateQuery, [artistId], (error) => {
-            if (error) {
-                console.error(error);
-                return res.status(500).json({ message: 'Error updating follower count' });
-            }
-            res.status(200).json({ message: 'Successfully unfollowed artist' });
-        });
-    });
-});
-// Retrieve Followed Artists Endpoint
-router.get('/users/:id/followed_artists', (req, res) => {
-    const userId = req.params.id;
+//         db.execute(updateQuery, [artistId], (error) => {
+//             if (error) {
+//                 console.error(error);
+//                 return res.status(500).json({ message: 'Error updating follower count' });
+//             }
+//             res.status(200).json({ message: 'Successfully unfollowed artist' });
+//         });
+//     });
+// });
+// // Retrieve Followed Artists Endpoint
+// router.get('/users/:id/followed_artists', (req, res) => {
+//     const userId = req.params.id;
 
-    // SQL query to retrieve artists followed by the user
-    const query = `
-        SELECT a.artist_id, a.artistname, a.follower_count
-        FROM Followers f
-        JOIN Artists a ON f.following_id = a.artist_id
-        WHERE f.followers_id = ? AND f.status = 'active';`;
+//     // SQL query to retrieve artists followed by the user
+//     const query = `
+//         SELECT a.artist_id, a.artistname, a.follower_count
+//         FROM Followers f
+//         JOIN Artists a ON f.following_id = a.artist_id
+//         WHERE f.followers_id = ? AND f.status = 'active';`;
 
-    db.execute(query, [userId], (error, results) => {
-        if (error) {
-            console.error(error);
-            return res.status(500).json({ message: 'Error retrieving followed artists' });
-        }
+//     db.execute(query, [userId], (error, results) => {
+//         if (error) {
+//             console.error(error);
+//             return res.status(500).json({ message: 'Error retrieving followed artists' });
+//         }
 
-        // Check if any artists are found
-        if (results.length === 0) {
-            return res.status(404).json({ message: 'No followed artists found' });
-        }
+//         // Check if any artists are found
+//         if (results.length === 0) {
+//             return res.status(404).json({ message: 'No followed artists found' });
+//         }
 
-        // Return the list of followed artists
-        res.status(200).json(results);
-    });
-});
+//         // Return the list of followed artists
+//         res.status(200).json(results);
+//     });
+// });
 
 // Endpoint to increment play_count for a song
 router.post('/songs/increment-play-count/:songId', async (req, res) => {
