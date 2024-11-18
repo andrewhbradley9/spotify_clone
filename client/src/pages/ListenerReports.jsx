@@ -27,8 +27,22 @@ const getCurrentMonthRange = () => {
     };
 };
 
+const defaultColor = '#FF8C00'; // Bright Orange
 
-
+const colorMapping = {
+    'Rock': '#FF6384',
+    'Pop': '#FFA500',
+    'Rap': '#FFCE56',
+    'Classical': '#8A2BE2',
+    'Hip-Hop': '#FF4500',
+    'Jazz': '#32CD32',
+    'Country': '#FFD700',
+    'Electronic': '#1E90FF',
+    'Blues': '#FF1493',
+    'Reggae': '#00FA9A',
+    'Metal': '#4B0082',
+    'Alternative': '#00CED1',
+};
 const ListenerReports = () => {
     const [releaseDateSortOrder, setReleaseDateSortOrder] = useState('desc'); // Default: Most recent first
     const [searchQuery, setSearchQuery] = useState('');
@@ -98,24 +112,33 @@ const ListenerReports = () => {
         fetchData();
     }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption]);
     
-    const genreData = {
-        labels: mostPlayedGenres.map(genre => genre.genre_type),
-        datasets: [
-            {
-                data: mostPlayedGenres.map(genre => genre.total_play_count),
-                backgroundColor: [
-                    '#FF6384', '#FFA500', '#FFCE56', '#8A2BE2', '#FF4500',
-                    '#32CD32', '#FFD700', '#1E90FF', '#FF1493', '#00FA9A',
-                    '#4B0082', '#00CED1'
-                ],
-                hoverBackgroundColor: [
-                    '#FF6384', '#FFA500', '#FFCE56', '#8A2BE2', '#FF4500',
-                    '#32CD32', '#FFD700', '#1E90FF', '#FF1493', '#00FA9A',
-                    '#4B0082', '#00CED1'
-                ],
-            },
-        ],
+    const calculateGenreData = () => {
+        const genreCounts = filteredSongs.reduce((acc, song) => {
+            if (song.genre_type) {
+                acc[song.genre_type] = (acc[song.genre_type] || 0) + song.play_count;
+            }
+            return acc;
+        }, {});
+    
+        const labels = Object.keys(genreCounts); // Genres in the table
+        const data = Object.values(genreCounts); // Total play counts
+    
+        const backgroundColor = labels.map(
+            (label) => colorMapping[label] || defaultColor
+        );
+    
+        return {
+            labels,
+            datasets: [
+                {
+                    data,
+                    backgroundColor,
+                    hoverBackgroundColor: backgroundColor,
+                },
+            ],
+        };
     };
+    
     const handleSearch = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
@@ -468,35 +491,62 @@ const handleGenreSelect = (genre) => {
         <div>
             <button className="cancel" onClick={handleGoHome}>Home</button>
             <h1>Monthly Reports</h1>
-            <div style={{ marginBottom: '20px' }}>
-    <label>
-        Start Date:
-        <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            style={{ marginLeft: '10px', marginRight: '20px' }}
-        />
-    </label>
-    <label>
-        End Date:
-        <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            style={{ marginLeft: '10px' }}
-        />
-    </label>
-    <button
-        onClick={() => filterByDateRange()}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <div>
+        <label>
+            Start Date:
+            <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ marginLeft: '10px', marginRight: '20px' }}
+            />
+        </label>
+    </div>
+    <div>
+        <label>
+            End Date:
+            <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ marginLeft: '10px' }}
+            />
+        </label>
+        <button
+            onClick={() => filterByDateRange()}
+            style={{
+                marginLeft: '20px',
+                padding: '5px 15px',
+                cursor: 'pointer',
+                backgroundColor: '#ff0000',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '5px',
+            }}
+        >
+            Filter
+        </button>
+        <button
+        onClick={() => {
+            setStartDate(defaultStartDate); // Reset start date
+            setEndDate(defaultEndDate); // Reset end date
+            setSearchQuery(''); // Reset search query
+            setFilteredSongs(topSongs); // Reset filtered songs to all top songs
+        }}
         style={{
-            marginLeft: '20px',
+            marginLeft: '10px',
             padding: '5px 15px',
             cursor: 'pointer',
+            backgroundColor: '#008CBA',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
         }}
     >
-        Filter
+        Reset Filters
     </button>
+    </div>
 </div>
 
             <input
@@ -508,11 +558,6 @@ const handleGenreSelect = (genre) => {
             />
             <section>
     {renderCombinedTable(topSongs)}
-    {artistTrendData ? (
-        <Line data={artistTrendData} options={{ responsive: true }} />
-    ) : (
-        <p>Loading trend data...</p>
-    )}
 </section>
 
 
@@ -524,18 +569,29 @@ const handleGenreSelect = (genre) => {
         onSelect={handleGenreSelect}
     />
 )}
-
 <section>
-    
-                <h2>Most Played Genres</h2>
-                {mostPlayedGenres.length > 0 ? (
-                    <div className="chart-container">
-                        <Pie data={genreData} />
-                    </div>
-                ) : (
-                    <p>No genre play data available.</p>
-                )}
-            </section>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+        <div style={{ flex: 1, marginRight: '10px' }}>
+            <h2>Most Played Genres</h2>
+            {filteredSongs.length > 0 ? (
+                <div className="chart-container">
+                    <Pie data={calculateGenreData()} />
+                </div>
+            ) : (
+                <p>No genre play data available.</p>
+            )}
+        </div>
+        <div style={{ flex: 1, marginLeft: '10px' }}>
+            <h2>Artist Trends</h2>
+            {artistTrendData ? (
+                <Line data={artistTrendData} options={{ responsive: true }} />
+            ) : (
+                <p>Loading trend data...</p>
+            )}
+        </div>
+    </div>
+</section>
+
         </div>
     );
 };
