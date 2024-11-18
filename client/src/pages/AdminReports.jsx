@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const apiUrl = process.env.REACT_APP_API_URL;
+import ReactDOM from 'react-dom';
 
 const getCurrentMonthRange = () => {
     const now = new Date();
@@ -16,12 +15,16 @@ const getCurrentMonthRange = () => {
 
 
 const AdminReports = () => {
+    const dropdownRef = useRef(null); 
     const navigate = useNavigate();
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
-    const [activeTab, setActiveTab] = useState('users');
-    const [setShowDropdown] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [roleDropdownPosition, setRoleDropdownPosition] = useState({ x: 200, y: 400 });
+    const [usernameDropdownPosition, setUsernameDropdownPosition] = useState({ x: 0, y: 0 });
+    const [isAllUsersChecked, setIsAllUsersChecked] = useState(false);
+    const [subscriptionStatusFilter, setSubscriptionStatusFilter] = useState('Both');
     const [usernameDropdown, setUsernameDropdown] = useState(null); // State for username dropdown
     const [roleDropdownVisible, setRoleDropdownVisible] = useState(false);
     const [data, setData] = useState({
@@ -54,13 +57,29 @@ const AdminReports = () => {
     });
     const fetchData = async (endpoint, params, setter) => {
         try {
-            const res = await axios.get(`${apiUrl}/artists/all/${endpoint}`, { params });
+            const res = await axios.get(`http://localhost:3360/artists/all/${endpoint}`, { params });
             setter(res.data);
         } catch (err) {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
         }
     };
-
+    useEffect(() => {
+        const handleOutsideClick = (event) => {
+            const isClickInsideRoleDropdown =
+                dropdownRef.current && dropdownRef.current.contains(event.target);
+    
+            if (!isClickInsideRoleDropdown) {
+                setUsernameDropdown(null); // Close username dropdown
+                setRoleDropdownVisible(false); // Close role dropdown
+            }
+        };
+    
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        };
+    }, []);
+    
     useEffect(() => {
         const fetchReports = async () => {
             await fetchData('users', { startDate: dateRange.startDate, endDate: dateRange.endDate }, (data) => {
@@ -99,41 +118,32 @@ const AdminReports = () => {
 
         fetchReports();
     }, [dateRange]);
-
     const handleToggle = (key) => {
+        const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
         if (!show[key]) {
-            const params = { endDate: dateRange.endDate };
-            if (key === 'inactiveSubscribers') {
-                params.mode = 'inactive';
-                fetchData('subscribers', params, (data) =>
-                    setLists((prev) => ({ ...prev, inactiveSubscribers: data.inactive_subscribers || [] }))
-                );
-            }
-            if (key === 'cumulativeSubscribers') {
-                params.mode = 'cumulative';
-                fetchData('subscribers', params, (data) =>
-                    setLists((prev) => ({ ...prev, cumulativeSubscribers: data.users || [] }))
-                );
-            }
+            fetchData('subscribers', params, (data) =>
+                setLists((prev) => ({
+                    ...prev,
+                    [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
+                }))
+            );
         }
         setShow((prev) => ({ ...prev, [key]: !prev[key] }));
     };
-
-    const handleDateChange = (key, value) => setDateRange((prev) => ({ ...prev, [key]: value }));
-    const handleSort = (key, field, isList = false) => {
-        const dataset = isList ? lists[key] : data[key];
     
-        // Ensure the dataset is valid
-        if (!key || !Array.isArray(dataset)) {
+    const handleDateChange = (key, value) => setDateRange((prev) => ({ ...prev, [key]: value }));
+    const handleSort = (field) => {
+        const key = isAllUsersChecked ? 'allUsers' : 'users'; // Determine the correct key dynamically
+        const dataset = data[key];
+    
+        if (!dataset || !Array.isArray(dataset)) {
             console.error(`The data for key "${key}" is not iterable or invalid.`);
             return;
         }
     
-        // Determine sort order
-        const order = sortOrder[key] === 'asc' ? 'desc' : 'asc';
+        const order = sortOrder[key] === 'asc' ? 'desc' : 'asc'; // Toggle sort order
         setSortOrder((prev) => ({ ...prev, [key]: order }));
     
-        // Sort the dataset
         const sortedList = [...dataset].sort((a, b) => {
             if (a[field] && b[field]) {
                 return order === 'asc' ? a[field].localeCompare(b[field]) : b[field].localeCompare(a[field]);
@@ -141,209 +151,235 @@ const AdminReports = () => {
             return 0; // Default if field is missing
         });
     
-        // Update the data or lists
-        if (isList) {
-            setLists((prev) => ({ ...prev, [key]: sortedList }));
-        } else {
-            setData((prev) => ({ ...prev, [key]: sortedList }));
-        }
+        setData((prev) => ({ ...prev, [key]: sortedList })); // Update the sorted data
     };
+    
     const handleRoleFilterChange = (role) => {
         setRoleFilter(role); // Update the role filter
         setShowDropdown(false); // Close the dropdown after selection
     };
-
-    const filteredData = (list) => {
-        let filtered = list;
-
-        // Apply role filter
-        if (roleFilter !== 'any') {
-            filtered = filtered.filter((item) => item.role === roleFilter);
-        }
-
-        // Apply search query filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter((item) => 
-                item.username.toLowerCase().includes(query) || 
-                (item.artist_id && item.artist_id.toString().includes(query)) // Check artist_id if present
-            );
-        }
-
-        return filtered;
+    const handleSubscriptionStatusToggle = () => {
+        setSubscriptionStatusFilter((prev) => {
+            if (prev === 'Both') return 'Active';
+            if (prev === 'Active') return 'Inactive';
+            return 'Both';
+        });
     };
-    const toggleUsernameDropdown = (userId) => {
-        setUsernameDropdown((prev) => (prev === userId ? null : userId)); // Toggle username dropdown
-    };
-    const renderTableWithBorders = (list, headers, key, isList = false) => (
+    const filteredData = (list) =>
+        list
+            .filter((item) => roleFilter === 'any' || item.role === roleFilter) // Apply role filter
+            .filter((item) =>
+                searchQuery
+                    ? item.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (item.artist_id && item.artist_id.toString().includes(searchQuery))
+                    : true
+            ) // Apply search filter
+            .filter((item) => {
+                // Apply subscription status filter
+                if (subscriptionStatusFilter === 'Active') {
+                    return item.subscription_date && new Date(item.subscription_date) <= new Date(dateRange.endDate);
+                }
+                if (subscriptionStatusFilter === 'Inactive') {
+                    return !item.subscription_date || new Date(item.subscription_date) > new Date(dateRange.endDate);
+                }
+                return true; // Both
+            });
+            const toggleUsernameDropdown = (userId, event) => {
+                const rect = event.target.getBoundingClientRect();
+                setUsernameDropdownPosition({
+                    x: rect.left + window.scrollX,
+                    y: rect.bottom + window.scrollY,
+                });
+                setUsernameDropdown((prev) => (prev === userId ? null : userId)); // Toggle dropdown
+            };
+    const handleCheckboxToggle = () => setIsAllUsersChecked((prev) => !prev);
+
+    const renderTableWithBorders = (list, headers) => (
         <div className="table-container">
             <table>
                 <thead>
                     <tr>
-                        {headers.map((header) => (
-                            <th key={header}>
-                                {header === 'Username' ? (
-                                    <span
-                                        style={{
-                                            cursor: 'pointer',
-                                            textDecoration: 'underline',
-                                        }}
-                                        onClick={() => handleSort(key, 'username', isList)}
-                                    >
-                                        {header}
-                                    </span>
-                                ) : header === 'Role' ? (
-                                    <div style={{ position: 'relative' }}>
+                        {headers.map((header) => {
+                            const isSortable = header === 'Username'; // Set sortable headers
+                            const isRoleColumn = header === 'Role'; // Identify the Role column
+    
+                            return (
+                                <th
+                                    key={header}
+                                    onClick={
+                                        header === 'Subscription Status'
+                                            ? handleSubscriptionStatusToggle // Handle click for Subscription Status
+                                            : isSortable
+                                            ? () => handleSort('username') // Handle sorting for Username
+                                            : null
+                                    }
+                                    style={{
+                                        position: 'relative',
+                                        cursor:
+                                            header === 'Subscription Status' || isSortable || isRoleColumn
+                                                ? 'pointer'
+                                                : 'default',
+                                        textDecoration:
+                                            header === 'Subscription Status' || isSortable || isRoleColumn
+                                                ? 'underline'
+                                                : 'none',
+                                    }}
+                                >
+                                    {header}
+                                    {header === 'Subscription Status' && ` (${subscriptionStatusFilter})`}
+                                    {isRoleColumn && (
                                         <span
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={() => setRoleDropdownVisible(!roleDropdownVisible)}
+                                        style={{
+                                            marginLeft: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            color: 'black',
+                                        }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setRoleDropdownVisible((prev) => !prev);
+                                                setRoleDropdownPosition({ x: e.clientX, y: e.clientY });
+                                            }}
                                         >
-                                            {header}
+                                            ⬇
                                         </span>
-                                        {roleDropdownVisible && (
+                                    )}
+                                    {isRoleColumn && roleDropdownVisible &&
+                                        ReactDOM.createPortal(
                                             <div
+                                                className="dropdown-menu"
                                                 style={{
                                                     position: 'absolute',
-                                                    top: '100%',
-                                                    left: 0,
+                                                    top: `${roleDropdownPosition.y}px`,
+                                                    left: `${roleDropdownPosition.x}px`,
                                                     backgroundColor: 'white',
                                                     border: '1px solid #ccc',
                                                     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                                                    zIndex: 10,
+                                                    zIndex: 1000,
                                                     minWidth: '150px',
-                                                    padding: '5px',
                                                     borderRadius: '4px',
+                                                    padding: '5px',
                                                 }}
+                                                onClick={(e) => e.stopPropagation()}
                                             >
-                                                <div
-                                                    style={{
-                                                        padding: '5px',
-                                                        cursor: 'pointer',
-                                                        color: '#7baeb0',
-                                                    }}
-                                                    onClick={() => handleRoleFilterChange('any')}
-                                                >
-                                                    Any
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        padding: '5px',
-                                                        cursor: 'pointer',
-                                                        color: '#7baeb0',
-                                                    }}
-                                                    onClick={() => handleRoleFilterChange('admin')}
-                                                >
-                                                    Admin
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        padding: '5px',
-                                                        cursor: 'pointer',
-                                                        color: '#7baeb0',
-                                                    }}
-                                                    onClick={() => handleRoleFilterChange('artist')}
-                                                >
-                                                    Artist
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        padding: '5px',
-                                                        cursor: 'pointer',
-                                                        color: '#7baeb0',
-                                                    }}
-                                                    onClick={() => handleRoleFilterChange('listener')}
-                                                >
-                                                    Listener
-                                                </div>
-                                            </div>
+                                                {['Any', 'Admin', 'Artist', 'Listener'].map((role) => (
+                                                    <div
+                                                        key={role}
+                                                        style={{
+                                                            padding: '5px',
+                                                            cursor: 'pointer',
+                                                            color: '#7baeb0',
+                                                        }}
+                                                        onClick={() => {
+                                                            handleRoleFilterChange(role.toLowerCase());
+                                                            setRoleDropdownVisible(false); // Close dropdown after selection
+                                                        }}
+                                                    >
+                                                        {role}
+                                                    </div>
+                                                ))}
+                                            </div>,
+                                            document.body // Render outside the table container
                                         )}
-                                    </div>
-                                ) : (
-                                    header
-                                )}
-                            </th>
-                        ))}
+                                </th>
+                            );
+                        })}
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredData(list).map((item) => (
-                        <tr key={item.user_id}>
-                            <td className="username-cell">
-                                {item.artist_id ? (
-                                    <div style={{ position: 'relative', cursor: 'pointer' }}>
-                                        <span onClick={() => toggleUsernameDropdown(item.user_id)}>
-                                            {item.username}
-                                        </span>
-                                        {usernameDropdown === item.user_id && (
-                                            <div
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '100%',
-                                                    left: 0,
-                                                    backgroundColor: 'white',
-                                                    border: '1px solid #ccc',
-                                                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                                                    zIndex: 10,
-                                                    minWidth: '200px',
-                                                    padding: '5px',
-                                                    borderRadius: '4px',
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        padding: '5px',
-                                                        cursor: 'pointer',
-                                                        color: '#7baeb0',
-                                                    }}
-                                                    onClick={() =>
-                                                        window.open(`/ArtistReports?artist_id=${item.artist_id}`, '_blank')
-                                                    }
-                                                >
-                                                    View Artist Report
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        padding: '5px',
-                                                        cursor: 'pointer',
-                                                        color: '#7baeb0',
-                                                    }}
-                                                    onClick={() =>
-                                                        window.open(`/artist/${item.artist_id}`, '_blank')
-                                                    }
-                                                >
-                                                    View Artist Profile
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    item.username
-                                )}
+                    {filteredData(list).length === 0 ? (
+                        <tr>
+                            <td colSpan={headers.length} style={{ textAlign: 'center', color: 'gray' }}>
+                                No users found
                             </td>
-                            <td className="role-cell">{item.role || 'N/A'}</td>
-                            <td className="date-cell">
-                                {item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}
-                            </td>
-                            <td className="date-cell">
-                                {item.subscription_date
-                                    ? new Date(item.subscription_date).toLocaleString()
-                                    : 'None'}
-                            </td>
-                            <td className="artist-id-cell">{item.artist_id ? item.artist_id : 'None'}</td>
                         </tr>
-                    ))}
+                    ) : (
+                        filteredData(list).map((item) => (
+                            <tr key={item.user_id}>
+                                <td className="username-cell">
+                                    {item.artist_id ? (
+                                        <div style={{ position: 'relative', cursor: 'pointer' }}>
+                                            <span onClick={(e) => toggleUsernameDropdown(item.user_id, e)}>
+                                                {item.username}
+                                            </span>
+                                            {usernameDropdown === item.user_id &&
+                                                ReactDOM.createPortal(
+                                                    <div
+                                                        className="username-dropdown"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: `${usernameDropdownPosition.y}px`,
+                                                            left: `${usernameDropdownPosition.x}px`,
+                                                            backgroundColor: 'white',
+                                                            border: '1px solid #ccc',
+                                                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                                                            zIndex: 1000,
+                                                            minWidth: '200px',
+                                                            padding: '5px',
+                                                            borderRadius: '4px',
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                padding: '5px',
+                                                                cursor: 'pointer',
+                                                                color: '#7baeb0',
+                                                            }}
+                                                            onClick={() =>
+                                                                window.open(`/artist/${item.artist_id}`, '_blank')
+                                                            }
+                                                        >
+                                                            View Artist Profile
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                padding: '5px',
+                                                                cursor: 'pointer',
+                                                                color: '#7baeb0',
+                                                            }}
+                                                            onClick={() =>
+                                                                window.open(
+                                                                    `/ArtistReports?artist_id=${item.artist_id}`,
+                                                                    '_blank'
+                                                                )
+                                                            }
+                                                        >
+                                                            View Artist Report
+                                                        </div>
+                                                    </div>,
+                                                    document.body // Render outside the table container
+                                                )}
+                                        </div>
+                                    ) : (
+                                        item.username
+                                    )}
+                                </td>
+                                <td>{item.role || 'N/A'}</td>
+                                <td>{item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}</td>
+                                <td>{item.subscription_date ? new Date(item.subscription_date).toLocaleString() : 'None'}</td>
+                                <td>{item.artist_id || 'None'}</td>
+                                <td>
+                                    {item.subscription_date &&
+                                    new Date(item.subscription_date) <= new Date(dateRange.endDate)
+                                        ? 'Active'
+                                        : 'Inactive'}
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
         </div>
     );
-    
-    const handleTabChange = (tab) => setActiveTab(tab);
+     
+
     const handleGoHome = () => navigate('/artist');
     return (
         <div>
-            <div className="home-button-container">
-    <           button className="cancel" onClick={handleGoHome}>Back Home</button>
-            </div>
+            <button className="cancel" onClick={handleGoHome}>
+                Home
+            </button>
             <h1>Admin Reports</h1>
             <div><p>
                     <label>
@@ -358,134 +394,71 @@ const AdminReports = () => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px' }}>
-                <button
-                    onClick={() => handleTabChange('users')}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: activeTab === 'users' ? '#583032' : 'rgba(0, 0, 0, 0.2)',
-                        color: activeTab === 'users' ? '#FF0000' : '#FF0000',
-                        border: '1px solid #FF0000',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                    }}
-                >
-                    User Report
-                </button>
-                <button
-                    onClick={() => handleTabChange('subscribers')}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: activeTab === 'subscribers' ? '#583032' : 'rgba(0, 0, 0, 0.2)',
-                        color: activeTab === 'subscribers' ? '#FF0000' : '#FF0000',
-                        border: '1px solid #FF0000',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                    }}
-                >
-                    Subscriber Report
-                </button>
+
             </div>
-            <div>
-                <label>
-                    Start Date:
-                    <input
-                        type="date"
-                        value={dateRange.startDate}
-                        onChange={(e) => handleDateChange('startDate', e.target.value)}
-                    />
-                </label>
-                <label>
-                    End Date:
-                    <input
-                        type="date"
-                        value={dateRange.endDate}
-                        onChange={(e) => handleDateChange('endDate', e.target.value)}
-                    />
-                </label>
-            </div>
-            {activeTab === 'users' ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <div>
+        <label>
+            Start Date:
+            <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => handleDateChange('startDate', e.target.value)}
+                style={{ marginLeft: '10px', padding: '5px' }}
+            />
+        </label>
+    </div>
+    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <label style={{ marginBottom: '10px' }}>
+            End Date:
+            <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => handleDateChange('endDate', e.target.value)}
+                style={{ marginLeft: '10px', padding: '5px' }}
+            />
+        </label>
+        <button
+            onClick={() => {
+                // Reset filters
+                setDateRange(getCurrentMonthRange()); // Reset to current month range
+                setSearchQuery(''); // Clear search query
+                setRoleFilter('any'); // Reset role filter
+                setSubscriptionStatusFilter('Both'); // Reset subscription status filter
+                setIsAllUsersChecked(false); // Uncheck "Include Total Users" checkbox
+            }}
+            style={{
+                marginTop: '10px',
+                padding: '5px 15px',
+                backgroundColor: '#008CBA',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+            }}
+        >
+            Reset Filters
+        </button>
+    </div>
+</div>
+
         <div>
             <h2>User Report</h2>
+            <label>
+                        <input
+                            type="checkbox"
+                            checked={isAllUsersChecked}
+                            onChange={handleCheckboxToggle}
+                        />
+                        Include Total Users (not within date frames)
+                        </label>
+                    {renderTableWithBorders(
+                        isAllUsersChecked ? data.allUsers : data.users,
+                        ['Username', 'Role', 'Created At', 'Subscription Date', 'Artist ID', 'Subscription Status']
+                    ,'allUsers', 'users')}
+                </div>
 
-            <div>
-                <p>Total New Users: {data.totalUsers}</p>
-                <button onClick={() => handleToggle('users')}>
-                    {show.users ? 'Hide Users' : 'View Users'}
-                </button>
-                {show.users &&
-                    renderTableWithBorders(data.users, [
-                        'Username',
-                        'Role',
-                        'Created At',
-                        'Subscription Date',
-                        'Artist ID',
-                    ],'users')}
-            </div>
-
-            <div>
-                <p>Total Users Up to Date: {data.totalUsersUpToDate}</p>
-                <button onClick={() => handleToggle('allUsers')}>
-                    {show.allUsers ? 'Hide Users Up to Date' : 'View Users Up to Date'}
-                </button>
-                {show.allUsers &&
-                    renderTableWithBorders(data.allUsers, [
-                        'Username',
-                        'Role',
-                        'Created At',
-                        'Subscription Date',
-                        'Artist ID',
-                    ],'allUsers')}
-            </div>
         </div>
-    ) : (
-        <div>
-            <h2>Subscriber Report</h2>
-            <div>
-                <p>New Active Subscribers (This Period): {data.newActiveSubscribers}</p>
-                <button onClick={() => handleToggle('subscribers')}>
-                    {show.subscribers ? 'Hide Subscribers' : 'View Subscribers'}
-                </button>
-                {show.subscribers &&
-                    renderTableWithBorders(data.subscribers, [
-                        'Username',
-                        'Role',
-                        'Created At',
-                        'Subscription Date',
-                        'Artist ID',
-                    ],'subscribers')}
-
-                <p>Active Subscribers (Cumulative): {data.totalActiveSubscribers}</p>
-                <button onClick={() => handleToggle('cumulativeSubscribers')}>
-                    {show.cumulativeSubscribers
-                        ? 'Hide Cumulative Active Subscribers'
-                        : 'View Cumulative Active Subscribers'}
-                </button>
-                {show.cumulativeSubscribers &&
-                    renderTableWithBorders(lists.cumulativeSubscribers, [
-                        'Username',
-                        'Role',
-                        'Created At',
-                        'Subscription Date',
-                        'Artist ID',
-                    ] ,'cumulativeSubscribers', true)}
-
-                <p>Inactive Subscribers: {data.inactiveSubscribers}</p>
-                <button onClick={() => handleToggle('inactiveSubscribers')}>
-                    {show.inactiveSubscribers ? 'Hide Inactive Subscribers' : 'View Inactive Subscribers'}
-                </button>
-                {show.inactiveSubscribers &&
-                    renderTableWithBorders(lists.inactiveSubscribers, [
-                        'Username',
-                        'Role',
-                        'Created At',
-                        'Subscription Date',
-                        'Artist ID',
-                    ],'inactiveSubscribers', true)}
-            </div>
-        </div>
-    )}
-</div>
-    );
-};
+    )};
 
 export default AdminReports;

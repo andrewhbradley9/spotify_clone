@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate} from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const AlbumSongs = () => {
-    const { albumId } = useParams();
+    const { albumId, artistId } = useParams();
     const navigate = useNavigate();
-    const [albumData, setAlbumData] = useState(null); // Consolidated state for album and songs
+    const [songs, setSongs] = useState([]);
     const [likedSongs, setLikedSongs] = useState(new Set());
+    const [albumDetails, setAlbumDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { playSong } = useAudio();
@@ -17,34 +18,30 @@ const AlbumSongs = () => {
     const authToken = localStorage.getItem('token'); // Retrieve auth token for authenticated requests
 
     useEffect(() => {
-        const fetchAlbumDetails = async () => {
+        const fetchAlbumAndSongs = async () => {
             try {
-                const { data } = await axios.get(`${apiUrl}/artists/albums/${albumId}/details`, {
-                    headers: { Authorization: `Bearer ${authToken}` }, // Include token for authenticated requests
-                });
+                const albumResponse = await axios.get(`${apiUrl}/artists/targetalbum/${albumId}`);
+                setAlbumDetails(albumResponse.data);
 
-                // Update state with album details and songs
-                setAlbumData({
-                    album_id: data.album_id,
-                    album_name: data.album_name,
-                    release_date: data.release_date,
-                    artist_id: data.artist_id,
-                    artist_name: data.artist_name,
-                    songs: data.songs,
+                const songsResponse = await axios.get(`${apiUrl}/artists/albums/${albumId}/songs/${artistId}`);
+                setSongs(songsResponse.data);
+
+                // Fetch liked songs for the user
+                const { data: likes } = await axios.get(`${apiUrl}/song/likes`, {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
                 });
-                
-                // Optionally set liked songs from the fetched data
-                setLikedSongs(new Set(data.songs.filter((song) => song.is_liked).map((song) => song.song_id)));
+                setLikedSongs(new Set(likes.map((like) => like.song_id)));
             } catch (err) {
-                setError('Error fetching album details');
+                setError('Error fetching album, songs, or likes');
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchAlbumDetails();
-    }, [albumId, authToken]);
+        fetchAlbumAndSongs();
+    }, [albumId, artistId, authToken]);
 
     const handleLikeToggle = async (songId) => {
         try {
@@ -81,7 +78,9 @@ const AlbumSongs = () => {
                 `${apiUrl}/song/report/${songId}`,
                 {}, // No body needed
                 {
-                    headers: { Authorization: `Bearer ${authToken}` },
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
                 }
             );
             alert('Song reported successfully.');
@@ -102,48 +101,56 @@ const AlbumSongs = () => {
         return date.toLocaleDateString('en-US', options).replace(',', '');
     };
 
-    const formatDuration = (duration) => {
-        if (!duration) return '0:00';
-        const [hours, minutes, seconds] = duration.split(':');
-        const totalSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
-        const mins = Math.floor(totalSeconds / 60);
-        const secs = totalSeconds % 60;
-        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    const formatDuration = (totalSeconds) => {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        let formattedDuration = '';
+        if (hours > 0) {
+            formattedDuration += `${hours}h `;
+        }
+        if (minutes > 0 || hours > 0) {
+            formattedDuration += `${minutes}m `;
+        }
+        formattedDuration += `${seconds}s`;
+
+        return formattedDuration.trim();
     };
 
     if (loading) {
-        return <div>Loading album details...</div>;
+        return <div>Loading songs...</div>;
     }
 
     if (error) {
         return <div>{error}</div>;
     }
 
-    if (!albumData) {
-        return <div>No album data available.</div>;
-    }
-
     return (
         <div className="songs-page">
             <div className="songs-header">
-                <div className="album-header">
-                    {albumData.album_image ? (
-                        <img src={albumData.album_image} alt={albumData.album_name} className="album-cover" />
-                    ) : (
-                        <div className="album-placeholder">
-                            <span>{albumData.album_name[0]}</span>
-                        </div>
-                    )}
-                    <div className="album-info">
-                        <span className="album-label">Album</span>
-                        <h1>{albumData.album_name}</h1>
-                        <div className="album-meta">
-                            <span>{formatDate(albumData.release_date)}</span>
-                            <span>•</span>
-                            <span>{albumData.songs.length} songs</span>
+                {albumDetails && (
+                    <div className="album-header">
+                        {albumDetails.album_image ? (
+                            <img src={albumDetails.album_image} alt={albumDetails.album_name} className="album-cover" />
+                        ) : (
+                            <div className="album-placeholder">
+                                <span>{albumDetails.album_name[0]}</span>
+                            </div>
+                        )}
+                        <div className="album-info">
+                            <span className="album-label">Album</span>
+                            <h1>{albumDetails.album_name}</h1>
+                            <div className="album-meta">
+                                <span>{formatDate(albumDetails.release_date)}</span>
+                                <span>•</span>
+                                <span>{songs.length} songs</span>
+                                <span>•</span>
+                                <span>{albumDetails.total_duration ? formatDuration(albumDetails.total_duration) : '0s'}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <div className="songs-list">
@@ -155,20 +162,21 @@ const AlbumSongs = () => {
                         <span>Duration</span>
                         <span>Actions</span>
                     </div>
-                    {albumData.songs.map((song, index) => (
+                    {songs.map((song, index) => (
                         <div key={song.song_id} className="song-row">
                             <span className="song-number">{index + 1}</span>
                             <div className="song-title-info">
+                                {song.song_image && <img src={song.song_image} alt={song.title} />}
                                 <div>
                                     <h4>{song.title}</h4>
                                     <p>{song.genre_type}</p>
                                 </div>
                             </div>
                             <span className="song-plays">{song.play_count}</span>
-                            <span className="song-duration">{formatDuration(song.duration)}</span>
+                            <span className="song-duration">{song.duration}</span>
                             <div className="song-actions">
                                 <button
-                                    onClick={() => playSong({ ...song, album_id: albumData.album_id })}
+                                    onClick={() => playSong({ ...song, album_id: albumId })}
                                     className="play-button"
                                 >
                                     Play
@@ -181,9 +189,9 @@ const AlbumSongs = () => {
                                 </button>
                                 <button
                                     onClick={() => handleLikeToggle(song.song_id)}
-                                    className={`like-button ${song.is_liked ? 'liked' : ''}`}
+                                    className={`like-button ${likedSongs.has(song.song_id) ? 'liked' : ''}`}
                                 >
-                                    {song.is_liked ? '❤️' : '🤍'}
+                                    {likedSongs.has(song.song_id) ? '❤️' : '🤍'}
                                 </button>
                             </div>
                         </div>
@@ -192,12 +200,22 @@ const AlbumSongs = () => {
             </div>
 
             <div className="navigation-buttons">
-                {/* <Link to={`/artist/${albumData.artist_id}`} className="nav-button">
-                    Back to Artist
-                </Link> */}
+                <Link to={`/albums/${artistId}`} className="nav-button">
+                    Back to Albums
+                </Link>
                 <button onClick={handleGoHome} className="nav-button">
                     Back to Artists
                 </button>
+                <div className="album-actions">
+                    {(localStorage.getItem('role') === 'admin' || localStorage.getItem('artistId') === String(artistId)) && (
+                        <button
+                            className="update-album"
+                            onClick={() => navigate(`/uploadAlbum/${artistId}/${albumId}`)}
+                        >
+                            Update Album
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
