@@ -308,6 +308,7 @@ const handleGenreSelect = (genre) => {
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
     
         const sortedSongs = [...validSongs].sort((a, b) => {
+            
             // Alphabetical sorting for artist name
             if (artistNameSortOrder) {
                 const artistA = (a.artistname || '').toLowerCase();
@@ -449,18 +450,21 @@ const handleGenreSelect = (genre) => {
                             >
                                 {selectedGenre || 'All Genres ▼'}
                             </th>
-    
-                            {/* Release Date Sorting */}
                             <th
-                                onClick={() => {
-                                    const newSortOrder = releaseDateSortOrder === 'desc' ? 'asc' : 'desc';
-                                    setReleaseDateSortOrder(newSortOrder); // Update sort order
-                                    setFilteredSongs(handleSort(validSongs, 'song_releasedate', newSortOrder));
-                                }}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                Release Date {releaseDateSortOrder === 'desc' ? '▼' : '▲'}
-                            </th>
+                            onClick={() => {
+                                const newSortOrder = releaseDateSortOrder === 'desc' ? 'asc' : 'desc';
+                                setReleaseDateSortOrder(newSortOrder); // Toggle release date sort order
+                                setArtistNameSortOrder(null); // Reset other sort orders
+                                setSongNameSortOrder(null);
+                                setPlayCountSortOrder(null);
+                                setLikesSortOrder(null);
+                                setFollowerCountSortOrder(null);
+                                setFilteredSongs(handleSort(validSongs, 'song_releasedate', newSortOrder)); // Update sorted data
+                            }}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            Release Date {releaseDateSortOrder === 'desc' ? '▼' : '▲'}
+                        </th>
                         </tr>
                     </thead>
                     <tbody>
