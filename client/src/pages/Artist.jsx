@@ -243,13 +243,13 @@ const Artist = () => {
                         ))}
                     </div>
 
-                    <div className="button-container">
+                    {/* <div className="button-container">
                         {userRole === 'admin' && (
                             <button className="add">
                                 <Link to="/add">Add new Artist</Link>
                             </button>
                         )}
-                    </div>
+                    </div> */}
                 </>
             )}
         </div>

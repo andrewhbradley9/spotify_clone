@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Line, Bar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     LineElement,
@@ -13,7 +14,9 @@ import {
     Tooltip,
     Legend,
 } from 'chart.js';
-import { format, subDays } from 'date-fns';
+// import { subDays } from 'date-fns';
+
+const apiUrl = process.env.REACT_APP_API_URL;
 
 ChartJS.register(
     LineElement, 
@@ -26,7 +29,7 @@ ChartJS.register(
     Legend
 );
 
-const apiUrl = process.env.REACT_APP_API_URL;
+
 
 const ArtistReports = () => {
     const [artistId, setArtistId] = useState('');
@@ -37,7 +40,12 @@ const ArtistReports = () => {
     const [error, setError] = useState(null);
     const [showComparison, setShowComparison] = useState(false);
     const [platformActivity, setPlatformActivity] = useState([]);
-    const [dateFilter, setDateFilter] = useState('all');
+    const [dateFilter] = useState('all');
+    const [songs, setSongs] = useState([]);
+    const [dateRange, setDateRange] = useState({
+        startDate: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0], // Default to last 7 days
+        endDate: new Date().toISOString().split('T')[0] // Today
+    });
     const location = useLocation();
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -75,6 +83,8 @@ const ArtistReports = () => {
             const response = await axios.get(`${apiUrl}/artists/${artistId}`);
             console.log("Artist data received:", response.data);
             setArtistInfo(response.data);
+            
+            await fetchSongs(artistId);
             
             if (compareArtistId) {
                 const compareResponse = await axios.get(`${apiUrl}/artists/${compareArtistId}`);
@@ -159,78 +169,160 @@ const ArtistReports = () => {
     };
 
     // Function to fetch platform activity
-    const fetchPlatformActivity = async () => {
+     // Ensure you import useCallback
+
+    const fetchPlatformActivity = useCallback(async () => {
         try {
-            const response = await axios.get(`http://localhost:3360/artists/activity/recent?filter=${dateFilter}`);
+            const response = await axios.get(`${apiUrl}/artists/recent/activity`, {
+                params: {
+                    startDate: dateRange.startDate,
+                    endDate: dateRange.endDate,
+                    artistId: artistId
+                }
+            });
             setPlatformActivity(response.data);
         } catch (err) {
             console.error('Error fetching platform activity:', err);
         }
-    };
+    }, [dateRange.startDate, dateRange.endDate, artistId]); // Dependencies for useCallback
 
-    // Call fetchPlatformActivity when component mounts
     useEffect(() => {
-        fetchPlatformActivity();
-    }, [dateFilter]);
+        if (artistId) {
+            fetchPlatformActivity();
+        }
+    }, [dateFilter, artistId, fetchPlatformActivity]); // Add fetchPlatformActivity as a dependency
 
-    // Add this function to filter song data
-    const filterSongsByDate = (songs) => {
-        if (!songs || dateFilter === 'all') return songs;
+    useEffect(() => {
+        if (artistId) {
+            fetchPlatformActivity();
+        }
+    }, [dateRange.startDate, dateRange.endDate, artistId, fetchPlatformActivity]);
 
-        const now = new Date();
-        const filterDate = {
-            'day': subDays(now, 1),
-            'week': subDays(now, 7),
-            'month': subDays(now, 30)
-        }[dateFilter];
+    
 
-        return songs.filter(song => new Date(song.last_played) >= filterDate);
+    // // Add this function to filter song data
+    // const filterSongsByDate = (songs) => {
+    //     if (!songs || dateFilter === 'all') return songs;
+
+    //     const now = new Date();
+    //     const filterDate = {
+    //         'day': subDays(now, 1),
+    //         'week': subDays(now, 7),
+    //         'month': subDays(now, 30)
+    //     }[dateFilter];
+
+    //     return songs.filter(song => new Date(song.last_played) >= filterDate);
+    // };
+
+    // Update the renderActivityTable function
+    const renderActivityTable = () => {
+        if (!platformActivity || platformActivity.length === 0) {
+            return <p>No activity data available for the selected period.</p>;
+        }
+
+        return (
+            <div className="table-container">
+                <h3>Recent Activity</h3>
+                <div className="date-range-selector">
+                    <div className="input-group">
+                        <label htmlFor="startDate">Start Date: </label>
+                        <input
+                            type="date"
+                            id="startDate"
+                            value={dateRange.startDate}
+                            onChange={(e) => handleDateChange('startDate', e.target.value)}
+                            className="date-select"
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label htmlFor="endDate">End Date: </label>
+                        <input
+                            type="date"
+                            id="endDate"
+                            value={dateRange.endDate}
+                            onChange={(e) => handleDateChange('endDate', e.target.value)}
+                            className="date-select"
+                        />
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {platformActivity.map((activity, index) => (
+                            <tr key={`${activity.id}-${activity.type}-${index}`}>
+                                <td className="date-cell">
+                                    {new Date(activity.date).toLocaleDateString()}
+                                </td>
+                                <td>{activity.type}</td>
+                                <td>{activity.details}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
     };
 
-    // Modify the renderActivityTable function
-    const renderActivityTable = () => (
-        <div className="events-section">
-            <h3>Recent Platform Activity</h3>
-            <div className="date-filter">
-                <select 
-                    value={dateFilter} 
-                    onChange={(e) => setDateFilter(e.target.value)}
-                    className="date-select"
-                >
-                    <option value="all">All Time</option>
-                    <option value="month">Last 30 Days</option>
-                    <option value="week">Last 7 Days</option>
-                    <option value="day">Last 24 Hours</option>
-                </select>
-            </div>
-            <table className="artist-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Activity</th>
-                        <th>Artist</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {platformActivity.map(activity => (
-                        <tr key={activity.id}>
-                            <td>{format(new Date(activity.date), 'MMM dd, yyyy')}</td>
-                            <td>{activity.type}</td>
-                            <td>{activity.artistname}</td>
-                            <td>{activity.details}</td>
+    // Add function to fetch songs
+    const fetchSongs = async (id) => {
+        try {
+            const response = await axios.get(`${apiUrl}/artists/albums/songs/${id}`);
+            console.log("Songs data received:", response.data);
+            setSongs(response.data);
+        } catch (err) {
+            console.error("Error fetching songs:", err);
+        }
+    };
+
+    // Update the songs performance table to use the songs state
+    const renderSongsTable = () => (
+        <table className="artist-table">
+            <thead>
+                <tr>
+                    <th>Song Title</th>
+                    <th>Album</th>
+                    <th>Duration</th>
+                    <th>Play Count</th>
+                    <th>Likes</th>
+                    <th>Performance Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {songs.map(song => {
+                    const performanceScore = (song.total_play_count || 0) + (song.total_likes || 0);
+                    return (
+                        <tr key={song.song_id}>
+                            <td>{song.song_title}</td>
+                            <td>{song.album_name}</td>
+                            <td>{song.duration}</td>
+                            <td>{song.total_play_count}</td>
+                            <td>{song.total_likes}</td>
+                            <td>{performanceScore}</td>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    );
+                })}
+            </tbody>
+        </table>
     );
+
+    // Add this function to handle date changes
+    const handleDateChange = (key, value) => {
+        setDateRange(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
 
     return (
         <div>
             <button className="cancel" onClick={handleGoHome}>Home</button>
             <h1>Artist Reports</h1>
-            
             <form onSubmit={handleFetchArtistInfo} className="comparison-form">
                 <div className="input-group">
                     <label>
@@ -278,6 +370,8 @@ const ArtistReports = () => {
                 
                 <button type="submit">Generate Report</button>
             </form>
+
+
             {loading ? (
                 <div className="loading">
                     <p>Searching<span className="dots">...</span></p>
@@ -285,7 +379,7 @@ const ArtistReports = () => {
             ) : error ? (
                 <p style={{ color: 'red' }}>{error}</p>
             ) : artistInfo && (
-                <div>
+                <>
                     {/* Artist Information Table */}
                     <table className="artist-table">
                         <thead>
@@ -329,35 +423,8 @@ const ArtistReports = () => {
                     {renderActivityTable()}
 
                     {/* Songs Performance Table */}
-                    <table className="artist-table">
-                        <thead>
-                            <tr>
-                                <th>Song Title</th>
-                                <th>Album</th>
-                                <th>Duration</th>
-                                <th>Play Count</th>
-                                <th>Likes</th>
-                                <th>Performance Score</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {artistInfo.albums?.map(album => 
-                                filterSongsByDate(album.songs)?.map(song => {
-                                    const performanceScore = (song.total_play_count || 0) + (song.total_likes || 0);
-                                    return (
-                                        <tr key={song.song_id}>
-                                            <td>{song.song_title}</td>
-                                            <td>{album.album_name}</td>
-                                            <td>{song.duration}</td>
-                                            <td>{song.total_play_count}</td>
-                                            <td>{song.total_likes}</td>
-                                            <td>{performanceScore}</td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                    <h3>Songs Performance</h3>
+                    {renderSongsTable()}
 
                     {/* Only show comparison chart if comparison is enabled and we have comparison data */}
                     {showComparison && compareArtistInfo ? (
@@ -387,7 +454,7 @@ const ArtistReports = () => {
                             />
                         </div>
                     )}
-                </div>
+                </>
             )}
         </div>
     );

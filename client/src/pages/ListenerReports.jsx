@@ -15,6 +15,8 @@ import {
     LinearScale,
 } from 'chart.js';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale);
 
 const getCurrentMonthRange = () => {
@@ -58,20 +60,20 @@ const ListenerReports = () => {
     const [songNameSortOrder, setSongNameSortOrder] = useState('asc'); // Default A-Z
     const [artistNameSortOrder, setArtistNameSortOrder] = useState('asc'); // Default A-Z
     const [topSongs, setTopSongs] = useState([]);
-    const [topArtists, setTopArtists] = useState([]);
-    const [songLimit, setSongLimit] = useState(10); 
-    const [artistLimit, setArtistLimit] = useState(10); 
-    const [sortOrder, setSortOrder] = useState("most");
-    const [mostPlayedGenres, setMostPlayedGenres] = useState([]);
+    const [setTopArtists] = useState([]);
+    const [songLimit] = useState(10); 
+    const [artistLimit] = useState(10); 
+    const [sortOrder] = useState("most");
+    const [setMostPlayedGenres] = useState([]);
     const { startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
     const [startDate, setStartDate] = useState(defaultStartDate);
     const [endDate, setEndDate] = useState(defaultEndDate);
-    const [dateRangeOption, setDateRangeOption] = useState("currentMonth");
+    const [dateRangeOption] = useState("currentMonth");
     const { playSong } = useAudio();
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const songRes = await axios.get(`http://localhost:3360/artists/songs/top10`, {
+                const songRes = await axios.get(`${apiUrl}/artists/songs/top10`, {
                     params: { 
                         limit: songLimit, 
                         sortOrder: sortOrder, 
@@ -86,7 +88,7 @@ const ListenerReports = () => {
                     updateArtistTrendData(songRes.data); // Update the chart data immediately
                 }
     
-                const topArtistRes = await axios.get(`http://localhost:3360/artists/artists/top10`, {
+                const topArtistRes = await axios.get(`${apiUrl}/artists/artists/top10`, {
                     params: { 
                         limit: artistLimit, 
                         sortOrder: sortOrder, 
@@ -94,16 +96,17 @@ const ListenerReports = () => {
                     },
                 });
                 if (topArtistRes.data && Array.isArray(topArtistRes.data)) {
-                    setTopArtists(topArtistRes.data);
+                    setTopArtists(topArtistRes.data); // State setter, stable between renders
                 }
     
-                const genreRes = await axios.get(`http://localhost:3360/artists/most-played/genres`, {
+                // Fetch most played genres
+                const genreRes = await axios.get(`${apiUrl}/artists/most-played/genres`, {
                     params: {
                         ...(dateRangeOption !== "currentMonth" && startDate && endDate ? { start_date: startDate, end_date: endDate } : {})
                     }
                 });
                 if (genreRes.data && Array.isArray(genreRes.data)) {
-                    setMostPlayedGenres(genreRes.data);
+                    setMostPlayedGenres(genreRes.data); // State setter, stable between renders
                 }
             } catch (err) {
                 console.log("Error fetching data:", err);
@@ -111,7 +114,16 @@ const ListenerReports = () => {
         };
     
         fetchData();
-    }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption]);
+    }, [
+        songLimit,
+        artistLimit, 
+        sortOrder, 
+        startDate, 
+        endDate, 
+        dateRangeOption, 
+        setTopArtists, 
+        setMostPlayedGenres // Include these to satisfy ESLint
+    ]);
     
     const calculateGenreData = () => {
         const genreCounts = filteredSongs.reduce((acc, song) => {
@@ -305,8 +317,8 @@ const handleGenreSelect = (genre) => {
         setIsDropdownOpen((prev) => !prev); // Toggle dropdown visibility
     };
     const renderCombinedTable = (artists, songs) => {
-        const isEnglish = (text) =>
-            /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
+        // const isEnglish = (text) =>
+        //     /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
     
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
     
@@ -356,9 +368,9 @@ const handleGenreSelect = (genre) => {
         });
     
         // Define ranking logic
-        const calculateRank = (index, sortOrder) => {
-            return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
-        };
+        // const calculateRank = (index, sortOrder) => {
+        //     return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
+        // };
     
         // Determine the current ranking type
         const isRankingActive = playCountSortOrder || likesSortOrder || followerCountSortOrder;

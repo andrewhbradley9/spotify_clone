@@ -1,52 +1,66 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate} from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const AlbumSongs = () => {
-    const { albumId, artistId } = useParams();
+    const {albumId} = useParams();
     const navigate = useNavigate();
     const [songs, setSongs] = useState([]);
-    const [likedSongs, setLikedSongs] = useState(new Set());
     const [albumDetails, setAlbumDetails] = useState(null);
+    const [likedSongs, setLikedSongs] = useState(new Set());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { playSong } = useAudio();
 
-    const authToken = localStorage.getItem('token'); // Retrieve auth token for authenticated requests
+    const authToken = localStorage.getItem('token');
 
     useEffect(() => {
-        const fetchAlbumAndSongs = async () => {
+        const fetchAlbumDetails = async () => {
             try {
-                const albumResponse = await axios.get(`${apiUrl}/artists/targetalbum/${albumId}`);
-                setAlbumDetails(albumResponse.data);
+                console.log('Fetching album details...');
+                const { data } = await axios.get(`${apiUrl}/artists/albums/${albumId}/details`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
 
-                const songsResponse = await axios.get(`${apiUrl}/artists/albums/${albumId}/songs/${artistId}`);
-                setSongs(songsResponse.data);
+                console.log('Album details response:', data);
+
+                // Set album details and songs
+                setAlbumDetails({
+                    album_id: data.album_id,
+                    album_name: data.album_name,
+                    release_date: data.release_date,
+                    artist_id: data.artist_id,
+                    artist_name: data.artist_name,
+                    album_image: data.album_image,
+                    total_duration: data.total_duration,
+                });
+
+                setSongs(data.songs);
 
                 // Fetch liked songs for the user
                 const { data: likes } = await axios.get(`${apiUrl}/song/likes`, {
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
+                    headers: { Authorization: `Bearer ${authToken}` },
                 });
                 setLikedSongs(new Set(likes.map((like) => like.song_id)));
+
+                console.log('Liked songs:', likes);
             } catch (err) {
-                setError('Error fetching album, songs, or likes');
-                console.error(err);
+                console.error('Error fetching album details or liked songs:', err);
+                setError('Failed to load album details.');
             } finally {
                 setLoading(false);
             }
         };
-        fetchAlbumAndSongs();
-    }, [albumId, artistId, authToken]);
+
+        fetchAlbumDetails();
+    }, [albumId, authToken]);
 
     const handleLikeToggle = async (songId) => {
         try {
             if (likedSongs.has(songId)) {
-                // Unlike the song
                 await axios.delete(`${apiUrl}/song/like/${songId}`, {
                     headers: { Authorization: `Bearer ${authToken}` },
                 });
@@ -56,13 +70,10 @@ const AlbumSongs = () => {
                     return updated;
                 });
             } else {
-                // Like the song
                 await axios.post(
                     `${apiUrl}/song/like/${songId}`,
                     {},
-                    {
-                        headers: { Authorization: `Bearer ${authToken}` },
-                    }
+                    { headers: { Authorization: `Bearer ${authToken}` } }
                 );
                 setLikedSongs((prev) => new Set(prev).add(songId));
             }
@@ -76,12 +87,8 @@ const AlbumSongs = () => {
         try {
             await axios.post(
                 `${apiUrl}/song/report/${songId}`,
-                {}, // No body needed
-                {
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                }
+                {},
+                { headers: { Authorization: `Bearer ${authToken}` } }
             );
             alert('Song reported successfully.');
         } catch (err) {
@@ -107,24 +114,15 @@ const AlbumSongs = () => {
         const seconds = totalSeconds % 60;
 
         let formattedDuration = '';
-        if (hours > 0) {
-            formattedDuration += `${hours}h `;
-        }
-        if (minutes > 0 || hours > 0) {
-            formattedDuration += `${minutes}m `;
-        }
+        if (hours > 0) formattedDuration += `${hours}h `;
+        if (minutes > 0 || hours > 0) formattedDuration += `${minutes}m `;
         formattedDuration += `${seconds}s`;
 
         return formattedDuration.trim();
     };
 
-    if (loading) {
-        return <div>Loading songs...</div>;
-    }
-
-    if (error) {
-        return <div>{error}</div>;
-    }
+    if (loading) return <div>Loading songs...</div>;
+    if (error) return <div>{error}</div>;
 
     return (
         <div className="songs-page">
@@ -200,13 +198,13 @@ const AlbumSongs = () => {
             </div>
 
             <div className="navigation-buttons">
-                <Link to={`/albums/${artistId}`} className="nav-button">
+                {/* <Link to={`/albums/${artistId}`} className="nav-button">
                     Back to Albums
-                </Link>
+                </Link> */}
                 <button onClick={handleGoHome} className="nav-button">
                     Back to Artists
                 </button>
-                <div className="album-actions">
+                {/* <div className="album-actions">
                     {(localStorage.getItem('role') === 'admin' || localStorage.getItem('artistId') === String(artistId)) && (
                         <button
                             className="update-album"
@@ -215,7 +213,7 @@ const AlbumSongs = () => {
                             Update Album
                         </button>
                     )}
-                </div>
+                </div> */}
             </div>
         </div>
     );

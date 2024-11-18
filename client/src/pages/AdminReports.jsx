@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
+
+const apiUrl = process.env.REACT_APP_API_URL;
 
 const getCurrentMonthRange = () => {
     const now = new Date();
@@ -15,11 +17,10 @@ const getCurrentMonthRange = () => {
 
 
 const AdminReports = () => {
-    const dropdownRef = useRef(null); 
     const navigate = useNavigate();
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
-    const [showDropdown, setShowDropdown] = useState(false);
+    const [setShowDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [roleDropdownPosition, setRoleDropdownPosition] = useState({ x: 200, y: 400 });
     const [usernameDropdownPosition, setUsernameDropdownPosition] = useState({ x: 0, y: 0 });
@@ -37,17 +38,17 @@ const AdminReports = () => {
         allUsers: [], // Ensure this is an array
         subscribers: [],
     });    
-    const [lists, setLists] = useState({
-        inactiveSubscribers: [],
-        cumulativeSubscribers: [],
-    });
-    const [show, setShow] = useState({
-        users: false,
-        allUsers: false,
-        subscribers: false,
-        inactiveSubscribers: false,
-        cumulativeSubscribers: false,
-    });
+    // const [setLists] = useState({
+    //     inactiveSubscribers: [],
+    //     cumulativeSubscribers: [],
+    // });
+    // const [show, setShow] = useState({
+    //     users: false,
+    //     allUsers: false,
+    //     subscribers: false,
+    //     inactiveSubscribers: false,
+    //     cumulativeSubscribers: false,
+    // });
     const [sortOrder, setSortOrder] = useState({
         users: 'asc',
         allUsers: 'asc',
@@ -57,29 +58,13 @@ const AdminReports = () => {
     });
     const fetchData = async (endpoint, params, setter) => {
         try {
-            const res = await axios.get(`http://localhost:3360/artists/all/${endpoint}`, { params });
+            const res = await axios.get(`${apiUrl}/artists/all/${endpoint}`, { params });
             setter(res.data);
         } catch (err) {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
         }
     };
-    useEffect(() => {
-        const handleOutsideClick = (event) => {
-            const isClickInsideRoleDropdown =
-                dropdownRef.current && dropdownRef.current.contains(event.target);
-    
-            if (!isClickInsideRoleDropdown) {
-                setUsernameDropdown(null); // Close username dropdown
-                setRoleDropdownVisible(false); // Close role dropdown
-            }
-        };
-    
-        document.addEventListener('mousedown', handleOutsideClick);
-        return () => {
-            document.removeEventListener('mousedown', handleOutsideClick);
-        };
-    }, []);
-    
+
     useEffect(() => {
         const fetchReports = async () => {
             await fetchData('users', { startDate: dateRange.startDate, endDate: dateRange.endDate }, (data) => {
@@ -118,18 +103,19 @@ const AdminReports = () => {
 
         fetchReports();
     }, [dateRange]);
-    const handleToggle = (key) => {
-        const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
-        if (!show[key]) {
-            fetchData('subscribers', params, (data) =>
-                setLists((prev) => ({
-                    ...prev,
-                    [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
-                }))
-            );
-        }
-        setShow((prev) => ({ ...prev, [key]: !prev[key] }));
-    };
+
+    // const handleToggle = (key) => {
+    //     const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
+    //     if (!show[key]) {
+    //         fetchData('subscribers', params, (data) =>
+    //             setLists((prev) => ({
+    //                 ...prev,
+    //                 [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
+    //             }))
+    //         );
+    //     }
+    //     setShow((prev) => ({ ...prev, [key]: !prev[key] }));
+    // };
     
     const handleDateChange = (key, value) => setDateRange((prev) => ({ ...prev, [key]: value }));
     const handleSort = (field) => {
@@ -184,13 +170,15 @@ const AdminReports = () => {
                 }
                 return true; // Both
             });
+    
+    
             const toggleUsernameDropdown = (userId, event) => {
-                const rect = event.target.getBoundingClientRect();
+                const rect = event.target.getBoundingClientRect(); // Get the position of the clicked element
                 setUsernameDropdownPosition({
                     x: rect.left + window.scrollX,
                     y: rect.bottom + window.scrollY,
                 });
-                setUsernameDropdown((prev) => (prev === userId ? null : userId)); // Toggle dropdown
+                setUsernameDropdown((prev) => (prev === userId ? null : userId));
             };
     const handleCheckboxToggle = () => setIsAllUsersChecked((prev) => !prev);
 
@@ -229,13 +217,7 @@ const AdminReports = () => {
                                     {header === 'Subscription Status' && ` (${subscriptionStatusFilter})`}
                                     {isRoleColumn && (
                                         <span
-                                        style={{
-                                            marginLeft: '8px',
-                                            cursor: 'pointer',
-                                            fontSize: '14px',
-                                            fontWeight: 'bold',
-                                            color: 'black',
-                                        }}
+                                            style={{ marginLeft: '5px', cursor: 'pointer' }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setRoleDropdownVisible((prev) => !prev);

@@ -685,190 +685,201 @@ router.post('/songs/increment-play-count/:songId', async (req, res) => {
     }
 });
 
-// router.get('/songs/top10', (req, res) => {
-//     const { start_date, end_date, limit = 10, sortOrder = 'most', dateRangeOption } = req.query;
-//     const orderDirection = sortOrder === 'least' ? 'ASC' : 'DESC';
+router.get('/songs/top10', (req, res) => {
+    const { start_date, end_date, limit = 10, sortOrder = 'most', dateRangeOption } = req.query;
+    const orderDirection = sortOrder === 'least' ? 'ASC' : 'DESC';
 
-//     let query;
-//     let queryParams;
+    let query;
+    let queryParams;
 
-//     if (dateRangeOption === "currentMonth") {
-//         query = `
-//         SELECT DISTINCT
-//             s.song_id,
-//             s.title,
-//             s.duration,
-//             COALESCE(a.album_name, 'Unknown Album') AS album_name,
-//             ar.artistname,
-//             s.song_releasedate,
-//             COALESCE(s.play_count, 0) AS play_count,
-//             COALESCE(s.likes, 0) AS likes
-//         FROM 
-//             song s
-//         LEFT JOIN 
-//             albums a ON s.album_id = a.album_id
-//         LEFT JOIN 
-//             artist ar ON a.artist_id = ar.artist_id
-//         LEFT JOIN 
-//             play_history ph ON s.song_id = ph.song_id
-//         ORDER BY 
-//             play_count ${orderDirection}, likes ${orderDirection}
-//         LIMIT ?;
-//         `;
-//         queryParams = [parseInt(limit)];
-//     } else {
-//         query = `
-//         SELECT DISTINCT
-//             s.song_id,
-//             s.title,
-//             s.duration,
-//             COALESCE(a.album_name, 'Unknown Album') AS album_name,
-//             ar.artistname,
-//             s.song_releasedate,
-//             COALESCE(COUNT(L.liked_at), 0) AS total_likes,
-//             COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count
-//         FROM 
-//             song s
-//         LEFT JOIN 
-//             albums a ON s.album_id = a.album_id
-//         LEFT JOIN 
-//             artist ar ON a.artist_id = ar.artist_id
-//         LEFT JOIN 
-//             (
-//                 SELECT ph.song_id, ph.total_play_count, ph.play_date
-//                 FROM play_history ph
-//                 INNER JOIN (
-//                     SELECT song_id, MAX(play_date) AS last_play_date
-//                     FROM play_history
-//                     WHERE play_date BETWEEN ? AND ?
-//                     GROUP BY song_id
-//                 ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
-//             ) AS ph_on_last_date ON s.song_id = ph_on_last_date.song_id
-//         LEFT JOIN 
-//             Likes L ON s.song_id = L.song_id AND L.liked_at BETWEEN ? AND ?
-//         GROUP BY 
-//             s.song_id, s.title, s.duration, album_name, ar.artistname, s.song_releasedate
-//         ORDER BY 
-//             total_play_count ${orderDirection}, total_likes ${orderDirection}
-//         LIMIT ?;
-//         `;
-//         queryParams = [start_date, end_date, start_date, end_date, parseInt(limit)];
-//     }
+    if (dateRangeOption === "currentMonth") {
+        query = `
+        SELECT DISTINCT
+            s.song_id,
+            s.title,
+            s.duration,
+            COALESCE(a.album_name, 'Unknown Album') AS album_name,
+            ar.artistname,
+            s.song_releasedate,
+            s.genre_type,
+            ar.follower_count,
+            ar.artist_id,
+            a.album_name,
+            a.album_id,
+            COALESCE(s.play_count, 0) AS play_count,
+            COALESCE(s.likes, 0) AS likes
+        FROM 
+            song s
+        LEFT JOIN 
+            albums a ON s.album_id = a.album_id
+        LEFT JOIN 
+            artist ar ON a.artist_id = ar.artist_id
+        LEFT JOIN 
+            play_history ph ON s.song_id = ph.song_id
+        ORDER BY 
+            play_count ${orderDirection}, likes ${orderDirection}
+        LIMIT ?;
+        `;
+        queryParams = [parseInt(limit)];
+    } else {
+        query = `
+        SELECT DISTINCT
+            s.song_id,
+            s.title,
+            s.duration,
+            s.genre_type,
+            COALESCE(a.album_name, 'Unknown Album') AS album_name,
+            ar.artistname,
+            s.song_releasedate,
+            ar.follower_count,
+            a.album_name,
+            ar.artist_id,
+            a.album_id,
+            COALESCE(COUNT(l.like_date), 0) AS total_likes,
+            COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count
+        FROM 
+            song s
+        LEFT JOIN 
+            albums a ON s.album_id = a.album_id
+        LEFT JOIN 
+            artist ar ON a.artist_id = ar.artist_id
+        LEFT JOIN 
+            (
+                SELECT ph.song_id, ph.total_play_count, ph.play_date
+                FROM play_history ph
+                INNER JOIN (
+                    SELECT song_id, MAX(play_date) AS last_play_date
+                    FROM play_history
+                    WHERE play_date BETWEEN ? AND ?
+                    GROUP BY song_id
+                ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
+            ) AS ph_on_last_date ON s.song_id = ph_on_last_date.song_id
+        LEFT JOIN 
+            likes l ON s.song_id = l.song_id AND l.like_date BETWEEN ? AND ?
+        GROUP BY 
+            s.song_id, s.title, s.duration, album_name, ar.artistname, s.song_releasedate
+        ORDER BY 
+            total_play_count ${orderDirection}, total_likes ${orderDirection}
+        LIMIT ?;
+        `;
+        queryParams = [start_date, end_date, start_date, end_date, parseInt(limit)];
+    }
 
-//     db.query(query, queryParams, (err, data) => {
-//         if (err) {
-//             console.error("Error fetching top songs:", err.code, err.message);
-//             return res.status(500).json({ error: "Error fetching top songs." });
-//         }
-//         console.log("Fetched Data:", JSON.stringify(data, null, 2));
-//         res.json(data);
-//     });
-// });
+    db.query(query, queryParams, (err, data) => {
+        if (err) {
+            console.error("Error fetching top songs:", err.code, err.message);
+            return res.status(500).json({ error: "Error fetching top songs." });
+        }
+        console.log("Fetched Data:", JSON.stringify(data, null, 2));
+        res.json(data);
+    });
+});
 
 
+// top artists
+router.get('/artists/top10', (req, res) => {
+    const limit = parseInt(req.query.limit) || 10;
+    const { start_date, end_date, sortOrder = 'most' } = req.query;
+    const orderDirection = sortOrder === 'least' ? 'ASC' : 'DESC';
 
+    let query;
+    let queryParams;
 
-// // top artists
-// router.get('/artists/top10', (req, res) => {
-//     const limit = parseInt(req.query.limit) || 10;
-//     const { start_date, end_date, sortOrder = 'most' } = req.query;
-//     const orderDirection = sortOrder === 'least' ? 'ASC' : 'DESC';
+    if (start_date && end_date) {
+        query = `
+        SELECT artist_id, artistname, artist_bio, artist_event, awards, genre_type, follower_count, is_verified,
+               title AS most_played_song_title, total_play_count, total_likes, total_popularity_score
+        FROM (
+            SELECT 
+                ar.artist_id,
+                ar.artistname,
+                ar.artist_bio,
+                ar.artist_event,
+                ar.awards,
+                ar.genre_type,
+                ar.follower_count,
+                ar.is_verified,
+                a.album_name,
+                s.title,
+                COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count,
+                COALESCE(COUNT(l.like_date), 0) AS total_likes,
+                (COALESCE(ph_on_last_date.total_play_count, 0) + COALESCE(COUNT(l.like_date), 0)) AS total_popularity_score,
+                ROW_NUMBER() OVER (PARTITION BY ar.artist_id ORDER BY (COALESCE(ph_on_last_date.total_play_count, 0) + COALESCE(COUNT(l.like_date), 0)) ${orderDirection}) AS \`rank\`
+            FROM 
+                artist ar
+            JOIN 
+                albums a ON ar.artist_id = a.artist_id
+            JOIN 
+                song s ON a.album_id = s.album_id
+            LEFT JOIN 
+                (
+                    SELECT ph.song_id, ph.total_play_count
+                    FROM play_history ph
+                    INNER JOIN (
+                        SELECT song_id, MAX(play_date) AS last_play_date
+                        FROM play_history
+                        WHERE play_date BETWEEN ? AND ?
+                        GROUP BY song_id
+                    ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
+                ) AS ph_on_last_date ON s.song_id = ph_on_last_date.song_id
+            LEFT JOIN 
+                likes l ON s.song_id = l.song_id AND l.like_date BETWEEN ? AND ?
+            GROUP BY 
+                ar.artist_id, ar.artistname, ar.artist_bio, ar.artist_event, ar.awards, ar.genre_type, ar.follower_count, 
+                ar.is_verified, s.title, ph_on_last_date.total_play_count
+        ) AS ranked_songs
+        WHERE \`rank\` = 1
+        ORDER BY total_popularity_score ${orderDirection}
+        LIMIT ?;
+        `;
 
-//     let query;
-//     let queryParams;
+        queryParams = [start_date, end_date, start_date, end_date, limit];
+    } else {
+        query = `
+        SELECT artist_id, artistname, artist_bio, artist_event, awards, genre_type, follower_count, is_verified,
+               title AS most_played_song_title, total_play_count, total_likes, total_popularity_score
+        FROM (
+            SELECT 
+                ar.artist_id,
+                ar.artistname,
+                ar.artist_bio,
+                ar.artist_event,
+                ar.awards,
+                ar.genre_type,
+                ar.follower_count,
+                ar.is_verified,
+                s.title,
+                a.album_name,
+                s.play_count AS total_play_count,
+                s.likes AS total_likes,
+                (s.play_count + s.likes) AS total_popularity_score,
+                ROW_NUMBER() OVER (PARTITION BY ar.artist_id ORDER BY (s.play_count + s.likes) ${orderDirection}) AS \`rank\`
+            FROM 
+                artist ar
+            JOIN 
+                albums a ON ar.artist_id = a.artist_id
+            JOIN 
+                song s ON a.album_id = s.album_id
+            WHERE s.play_count + s.likes > 0
+        ) AS ranked_songs
+        WHERE \`rank\` = 1
+        ORDER BY total_popularity_score ${orderDirection}
+        LIMIT ?;
+        `;
 
-//     if (start_date && end_date) {
-//         query = `
-//         SELECT artist_id, artistname, artist_bio, artist_event, awards, genre_type, follower_count, is_verified,
-//                title AS most_played_song_title, total_play_count, total_likes, total_popularity_score
-//         FROM (
-//             SELECT 
-//                 ar.artist_id,
-//                 ar.artistname,
-//                 ar.artist_bio,
-//                 ar.artist_event,
-//                 ar.awards,
-//                 ar.genre_type,
-//                 ar.follower_count,
-//                 ar.is_verified,
-//                 s.title,
-//                 COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count,
-//                 COALESCE(COUNT(l.like_date), 0) AS total_likes,
-//                 (COALESCE(ph_on_last_date.total_play_count, 0) + COALESCE(COUNT(l.like_date), 0)) AS total_popularity_score,
-//                 ROW_NUMBER() OVER (PARTITION BY ar.artist_id ORDER BY (COALESCE(ph_on_last_date.total_play_count, 0) + COALESCE(COUNT(l.like_date), 0)) ${orderDirection}) AS \`rank\`
-//             FROM 
-//                 artist ar
-//             JOIN 
-//                 albums a ON ar.artist_id = a.artist_id
-//             JOIN 
-//                 song s ON a.album_id = s.album_id
-//             LEFT JOIN 
-//                 (
-//                     SELECT ph.song_id, ph.total_play_count
-//                     FROM play_history ph
-//                     INNER JOIN (
-//                         SELECT song_id, MAX(play_date) AS last_play_date
-//                         FROM play_history
-//                         WHERE play_date BETWEEN ? AND ?
-//                         GROUP BY song_id
-//                     ) AS last_play ON ph.song_id = last_play.song_id AND ph.play_date = last_play.last_play_date
-//                 ) AS ph_on_last_date ON s.song_id = ph_on_last_date.song_id
-//             LEFT JOIN 
-//                 likes l ON s.song_id = l.song_id AND l.like_date BETWEEN ? AND ?
-//             GROUP BY 
-//                 ar.artist_id, ar.artistname, ar.artist_bio, ar.artist_event, ar.awards, ar.genre_type, ar.follower_count, 
-//                 ar.is_verified, s.title, ph_on_last_date.total_play_count
-//         ) AS ranked_songs
-//         WHERE \`rank\` = 1
-//         ORDER BY total_popularity_score ${orderDirection}
-//         LIMIT ?;
-//         `;
+        queryParams = [limit];
+    }
 
-//         queryParams = [start_date, end_date, start_date, end_date, limit];
-//     } else {
-//         query = `
-//         SELECT artist_id, artistname, artist_bio, artist_event, awards, genre_type, follower_count, is_verified,
-//                title AS most_played_song_title, total_play_count, total_likes, total_popularity_score
-//         FROM (
-//             SELECT 
-//                 ar.artist_id,
-//                 ar.artistname,
-//                 ar.artist_bio,
-//                 ar.artist_event,
-//                 ar.awards,
-//                 ar.genre_type,
-//                 ar.follower_count,
-//                 ar.is_verified,
-//                 s.title,
-//                 s.play_count AS total_play_count,
-//                 s.likes AS total_likes,
-//                 (s.play_count + s.likes) AS total_popularity_score,
-//                 ROW_NUMBER() OVER (PARTITION BY ar.artist_id ORDER BY (s.play_count + s.likes) ${orderDirection}) AS \`rank\`
-//             FROM 
-//                 artist ar
-//             JOIN 
-//                 albums a ON ar.artist_id = a.artist_id
-//             JOIN 
-//                 song s ON a.album_id = s.album_id
-//             WHERE s.play_count + s.likes > 0
-//         ) AS ranked_songs
-//         WHERE \`rank\` = 1
-//         ORDER BY total_popularity_score ${orderDirection}
-//         LIMIT ?;
-//         `;
+    db.query(query, queryParams, (err, data) => {
+        if (err) {
+            console.error("Error fetching top artists:", err);
+            return res.status(500).json({ error: "Error fetching top artists." });
+        }
+        console.log("Fetched Top Artists Data:", JSON.stringify(data, null, 2));
+        res.json(data);
+    });
+});
 
-//         queryParams = [limit];
-//     }
-
-//     db.query(query, queryParams, (err, data) => {
-//         if (err) {
-//             console.error("Error fetching top artists:", err);
-//             return res.status(500).json({ error: "Error fetching top artists." });
-//         }
-//         console.log("Fetched Top Artists Data:", JSON.stringify(data, null, 2));
-//         res.json(data);
-//     });
-// });
 
 
 // Get top 5 played songs with artist name
@@ -1455,6 +1466,130 @@ router.get('/artist/:id', (req, res) => {
         });
 
         res.json(artistInfo);
+    });
+});
+
+// Get recent activity for a specific artist
+router.get('/recent/activity', (req, res) => {
+    const { startDate, endDate, artistId } = req.query;
+    
+    const query = `
+        (
+            -- Song releases
+            SELECT 
+                s.song_id as id,
+                s.song_releasedate as date,
+                'New Song Release' as type,
+                ar.artistname,
+                CONCAT('Released new song "', s.title, '"') as details
+            FROM song s
+            JOIN albums al ON s.album_id = al.album_id
+            JOIN artist ar ON al.artist_id = ar.artist_id
+            WHERE ar.artist_id = ? 
+            AND s.song_releasedate IS NOT NULL
+            AND s.song_releasedate BETWEEN ? AND ?
+        )
+        UNION ALL
+        (
+            -- Album releases
+            SELECT 
+                al.album_id as id,
+                al.release_date as date,
+                'New Album Release' as type,
+                ar.artistname,
+                CONCAT('Released new album "', al.album_name, '"') as details
+            FROM albums al
+            JOIN artist ar ON al.artist_id = ar.artist_id
+            WHERE ar.artist_id = ? 
+            AND al.release_date IS NOT NULL
+            AND al.release_date BETWEEN ? AND ?
+        )
+        UNION ALL
+        (
+            -- Play count milestones
+            SELECT 
+                s.song_id as id,
+                ph.play_date as date,
+                'Play Count Milestone' as type,
+                ar.artistname,
+                CONCAT('"', s.title, '" reached ', ph.total_play_count, ' plays') as details
+            FROM play_history ph
+            JOIN song s ON ph.song_id = s.song_id
+            JOIN albums al ON s.album_id = al.album_id
+            JOIN artist ar ON al.artist_id = ar.artist_id
+            WHERE ar.artist_id = ? 
+            AND ph.play_date IS NOT NULL
+            AND ph.play_date BETWEEN ? AND ?
+        )
+        UNION ALL
+        (
+            -- Like milestones
+            SELECT 
+                s.song_id as id,
+                l.liked_at as date,
+                'Like Milestone' as type,
+                ar.artistname,
+                CONCAT('"', s.title, '" received a new like') as details
+            FROM Likes l
+            JOIN song s ON l.song_id = s.song_id
+            JOIN albums al ON s.album_id = al.album_id
+            JOIN artist ar ON al.artist_id = ar.artist_id
+            WHERE ar.artist_id = ? 
+            AND l.liked_at IS NOT NULL
+            AND l.liked_at BETWEEN ? AND ?
+        )
+        ORDER BY date DESC
+        LIMIT 50
+    `;
+
+    const params = [
+        artistId, startDate, endDate,
+        artistId, startDate, endDate,
+        artistId, startDate, endDate,
+        artistId, startDate, endDate
+    ];
+
+    db.query(query, params, (err, results) => {
+        if (err) {
+            console.error('Error fetching artist activity:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json(results);
+    });
+});
+
+
+router.get('/albums/songs/:artistId', (req, res) => {
+    const artistId = req.params.artistId;
+    
+    const query = `
+        SELECT 
+            s.song_id,
+            s.title as song_title,
+            s.duration,
+            s.play_count as total_play_count,
+            al.album_name,
+            COALESCE(COUNT(l.like_id), 0) as total_likes
+        FROM 
+            song s
+        JOIN 
+            albums al ON s.album_id = al.album_id
+        LEFT JOIN 
+            Likes l ON s.song_id = l.song_id
+        WHERE 
+            al.artist_id = ?
+        GROUP BY 
+            s.song_id, s.title, s.duration, s.play_count, al.album_name
+        ORDER BY 
+            al.album_name, s.title
+    `;
+
+    db.query(query, [artistId], (err, results) => {
+        if (err) {
+            console.error('Error fetching songs:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json(results);
     });
 });
 
