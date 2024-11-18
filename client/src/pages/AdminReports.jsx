@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const getCurrentMonthRange = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -52,7 +54,7 @@ const AdminReports = () => {
     });
     const fetchData = async (endpoint, params, setter) => {
         try {
-            const res = await axios.get(`http://localhost:3360/artists/all/${endpoint}`, { params });
+            const res = await axios.get(`${apiUrl}/artists/all/${endpoint}`, { params });
             setter(res.data);
         } catch (err) {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);

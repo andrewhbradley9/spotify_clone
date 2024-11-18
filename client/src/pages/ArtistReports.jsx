@@ -136,7 +136,7 @@ const ArtistReports = () => {
     useEffect(() => {
         const fetchPlatformActivity = async () => {
             try {
-                const response = await axios.get(`http://localhost:3360/artists/activity/recent?filter=${dateFilter}`);
+                const response = await axios.get(`${apiUrl}/artists/activity/recent?filter=${dateFilter}`);
                 setPlatformActivity(response.data);
             } catch (err) {
                 console.error('Error fetching platform activity:', err);

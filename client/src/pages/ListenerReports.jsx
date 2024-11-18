@@ -13,6 +13,8 @@ import {
     LinearScale,
 } from 'chart.js';
 
+
+
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale);
 
 const getCurrentMonthRange = () => {
@@ -26,6 +28,7 @@ const getCurrentMonthRange = () => {
 };
 
 
+const apiUrl = process.env.REACT_APP_API_URL;
 
 const ListenerReports = () => {
     const [topSongs, setTopSongs] = useState([]);
@@ -42,7 +45,7 @@ const ListenerReports = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const songRes = await axios.get(`http://localhost:3360/artists/songs/top10`, {
+                const songRes = await axios.get(`${apiUrl}/3360/artists/songs/top10`, {
                     params: { 
                         limit: songLimit, 
                         sortOrder: sortOrder, 
@@ -55,7 +58,7 @@ const ListenerReports = () => {
                     setTopSongs(songRes.data);
                 }
 
-                const topArtistRes = await axios.get(`http://localhost:3360/artists/artists/top10`, {
+                const topArtistRes = await axios.get(`${apiUrl}/3360/artists/artists/top10`, {
                     params: { 
                         limit: artistLimit, 
                         sortOrder: sortOrder, 
@@ -66,7 +69,7 @@ const ListenerReports = () => {
                     setTopArtists(topArtistRes.data);
                 }
 
-                const genreRes = await axios.get(`http://localhost:3360/artists/most-played/genres`, {
+                const genreRes = await axios.get(`${apiUrl}/artists/most-played/genres`, {
                     params: {
                         ...(dateRangeOption !== "currentMonth" && startDate && endDate ? { start_date: startDate, end_date: endDate } : {})
                     }
