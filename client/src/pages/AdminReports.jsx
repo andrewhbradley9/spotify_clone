@@ -267,82 +267,91 @@ const AdminReports = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredData(list).map((item) => (
-                        <tr key={item.user_id}>
-                            <td className="username-cell">
-                                {item.artist_id ? (
-                                    <div style={{ position: 'relative', cursor: 'pointer' }}>
-                                        <span onClick={(e) => toggleUsernameDropdown(item.user_id, e)}>
-                                            {item.username}
-                                        </span>
-                                        {usernameDropdown === item.user_id &&
-                                            ReactDOM.createPortal(
-                                                <div
-                                                    className="username-dropdown"
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: `${usernameDropdownPosition.y}px`,
-                                                        left: `${usernameDropdownPosition.x}px`,
-                                                        backgroundColor: 'white',
-                                                        border: '1px solid #ccc',
-                                                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                                                        zIndex: 1000,
-                                                        minWidth: '200px',
-                                                        padding: '5px',
-                                                        borderRadius: '4px',
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            padding: '5px',
-                                                            cursor: 'pointer',
-                                                            color: '#7baeb0',
-                                                        }}
-                                                        onClick={() =>
-                                                            window.open(`/artist/${item.artist_id}`, '_blank')
-                                                        }
-                                                    >
-                                                        View Artist Profile
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            padding: '5px',
-                                                            cursor: 'pointer',
-                                                            color: '#7baeb0',
-                                                        }}
-                                                        onClick={() =>
-                                                            window.open(
-                                                                `/ArtistReports?artist_id=${item.artist_id}`,
-                                                                '_blank'
-                                                            )
-                                                        }
-                                                    >
-                                                        View Artist Report
-                                                    </div>
-                                                </div>,
-                                                document.body // Render outside the table container
-                                            )}
-                                    </div>
-                                ) : (
-                                    item.username
-                                )}
-                            </td>
-                            <td>{item.role || 'N/A'}</td>
-                            <td>{item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}</td>
-                            <td>{item.subscription_date ? new Date(item.subscription_date).toLocaleString() : 'None'}</td>
-                            <td>{item.artist_id || 'None'}</td>
-                            <td>
-                                {item.subscription_date &&
-                                new Date(item.subscription_date) <= new Date(dateRange.endDate)
-                                    ? 'Active'
-                                    : 'Inactive'}
+                    {filteredData(list).length === 0 ? (
+                        <tr>
+                            <td colSpan={headers.length} style={{ textAlign: 'center', color: 'gray' }}>
+                                No users found
                             </td>
                         </tr>
-                    ))}
+                    ) : (
+                        filteredData(list).map((item) => (
+                            <tr key={item.user_id}>
+                                <td className="username-cell">
+                                    {item.artist_id ? (
+                                        <div style={{ position: 'relative', cursor: 'pointer' }}>
+                                            <span onClick={(e) => toggleUsernameDropdown(item.user_id, e)}>
+                                                {item.username}
+                                            </span>
+                                            {usernameDropdown === item.user_id &&
+                                                ReactDOM.createPortal(
+                                                    <div
+                                                        className="username-dropdown"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: `${usernameDropdownPosition.y}px`,
+                                                            left: `${usernameDropdownPosition.x}px`,
+                                                            backgroundColor: 'white',
+                                                            border: '1px solid #ccc',
+                                                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                                                            zIndex: 1000,
+                                                            minWidth: '200px',
+                                                            padding: '5px',
+                                                            borderRadius: '4px',
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                padding: '5px',
+                                                                cursor: 'pointer',
+                                                                color: '#7baeb0',
+                                                            }}
+                                                            onClick={() =>
+                                                                window.open(`/artist/${item.artist_id}`, '_blank')
+                                                            }
+                                                        >
+                                                            View Artist Profile
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                padding: '5px',
+                                                                cursor: 'pointer',
+                                                                color: '#7baeb0',
+                                                            }}
+                                                            onClick={() =>
+                                                                window.open(
+                                                                    `/ArtistReports?artist_id=${item.artist_id}`,
+                                                                    '_blank'
+                                                                )
+                                                            }
+                                                        >
+                                                            View Artist Report
+                                                        </div>
+                                                    </div>,
+                                                    document.body // Render outside the table container
+                                                )}
+                                        </div>
+                                    ) : (
+                                        item.username
+                                    )}
+                                </td>
+                                <td>{item.role || 'N/A'}</td>
+                                <td>{item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}</td>
+                                <td>{item.subscription_date ? new Date(item.subscription_date).toLocaleString() : 'None'}</td>
+                                <td>{item.artist_id || 'None'}</td>
+                                <td>
+                                    {item.subscription_date &&
+                                    new Date(item.subscription_date) <= new Date(dateRange.endDate)
+                                        ? 'Active'
+                                        : 'Inactive'}
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
         </div>
-    );    
+    );
+     
 
     const handleGoHome = () => navigate('/artist');
     return (
@@ -366,24 +375,52 @@ const AdminReports = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px' }}>
 
             </div>
-            <div>
-                <label>
-                    Start Date:
-                    <input
-                        type="date"
-                        value={dateRange.startDate}
-                        onChange={(e) => handleDateChange('startDate', e.target.value)}
-                    />
-                </label>
-                <label>
-                    End Date:
-                    <input
-                        type="date"
-                        value={dateRange.endDate}
-                        onChange={(e) => handleDateChange('endDate', e.target.value)}
-                    />
-                </label>
-            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <div>
+        <label>
+            Start Date:
+            <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => handleDateChange('startDate', e.target.value)}
+                style={{ marginLeft: '10px', padding: '5px' }}
+            />
+        </label>
+    </div>
+    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <label style={{ marginBottom: '10px' }}>
+            End Date:
+            <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => handleDateChange('endDate', e.target.value)}
+                style={{ marginLeft: '10px', padding: '5px' }}
+            />
+        </label>
+        <button
+            onClick={() => {
+                // Reset filters
+                setDateRange(getCurrentMonthRange()); // Reset to current month range
+                setSearchQuery(''); // Clear search query
+                setRoleFilter('any'); // Reset role filter
+                setSubscriptionStatusFilter('Both'); // Reset subscription status filter
+                setIsAllUsersChecked(false); // Uncheck "Include Total Users" checkbox
+            }}
+            style={{
+                marginTop: '10px',
+                padding: '5px 15px',
+                backgroundColor: '#008CBA',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+            }}
+        >
+            Reset Filters
+        </button>
+    </div>
+</div>
+
         <div>
             <h2>User Report</h2>
             <label>

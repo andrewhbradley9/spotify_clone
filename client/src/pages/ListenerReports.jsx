@@ -308,67 +308,53 @@ const handleGenreSelect = (genre) => {
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
     
         const sortedSongs = [...validSongs].sort((a, b) => {
-            if (releaseDateSortOrder) {
-                const dateA = new Date(a.song_releasedate);
-                const dateB = new Date(b.song_releasedate);
-        
-                return releaseDateSortOrder === 'desc'
-                    ? dateB - dateA // Most recent first
-                    : dateA - dateB; // Least recent first
-            }
-
-            if (followerCountSortOrder) {
-                return followerCountSortOrder === 'desc'
-                    ? b.follower_count - a.follower_count
-                    : a.follower_count - b.follower_count;
+            // Alphabetical sorting for artist name
+            if (artistNameSortOrder) {
+                const artistA = (a.artistname || '').toLowerCase();
+                const artistB = (b.artistname || '').toLowerCase();
+                return artistNameSortOrder === 'asc'
+                    ? artistA.localeCompare(artistB)
+                    : artistB.localeCompare(artistA);
             }
     
-            if (likesSortOrder) {
-                return likesSortOrder === 'desc'
-                    ? b.likes - a.likes
-                    : a.likes - b.likes;
+            // Alphabetical sorting for song name
+            if (songNameSortOrder) {
+                const songA = (a.title || '').toLowerCase();
+                const songB = (b.title || '').toLowerCase();
+                return songNameSortOrder === 'asc'
+                    ? songA.localeCompare(songB)
+                    : songB.localeCompare(songA);
             }
     
+            // Sorting for play count (default: greatest to least)
             if (playCountSortOrder) {
                 return playCountSortOrder === 'desc'
                     ? b.play_count - a.play_count
                     : a.play_count - b.play_count;
             }
     
-            if (artistNameSortOrder) {
-                return artistNameSortOrder === 'asc'
-                    ? a.artistname.localeCompare(b.artistname, 'default', { sensitivity: 'base' })
-                    : b.artistname.localeCompare(a.artistname, 'default', { sensitivity: 'base' });
+            // Sorting for likes (default: greatest to least)
+            if (likesSortOrder) {
+                return likesSortOrder === 'desc'
+                    ? b.likes - a.likes
+                    : a.likes - b.likes;
             }
     
-            if (songNameSortOrder) {
-                const aTitleIsEnglish = isEnglish(a.title);
-                const bTitleIsEnglish = isEnglish(b.title);
-    
-                if (aTitleIsEnglish && bTitleIsEnglish) {
-                    return songNameSortOrder === 'asc'
-                        ? a.title.localeCompare(b.title, 'default', { sensitivity: 'base' })
-                        : b.title.localeCompare(a.title, 'default', { sensitivity: 'base' });
-                }
-    
-                if (!aTitleIsEnglish && bTitleIsEnglish) {
-                    return songNameSortOrder === 'asc'
-                        ? a.artistname.localeCompare(b.artistname, 'default', { sensitivity: 'base' })
-                        : b.artistname.localeCompare(a.artistname, 'default', { sensitivity: 'base' });
-                }
-    
-                if (aTitleIsEnglish && !bTitleIsEnglish) {
-                    return songNameSortOrder === 'asc'
-                        ? b.artistname.localeCompare(a.artistname, 'default', { sensitivity: 'base' })
-                        : a.artistname.localeCompare(b.artistname, 'default', { sensitivity: 'base' });
-                }
-    
-                return songNameSortOrder === 'asc'
-                    ? a.artistname.localeCompare(b.artistname, 'default', { sensitivity: 'base' })
-                    : b.artistname.localeCompare(a.artistname, 'default', { sensitivity: 'base' });
+            // Sorting for follower count (default: greatest to least)
+            if (followerCountSortOrder) {
+                return followerCountSortOrder === 'desc'
+                    ? b.follower_count - a.follower_count
+                    : a.follower_count - b.follower_count;
             }
     
-            return 0;
+            // Default sorting by release date
+            if (releaseDateSortOrder) {
+                const dateA = new Date(a.song_releasedate);
+                const dateB = new Date(b.song_releasedate);
+                return releaseDateSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            }
+    
+            return 0; // Default if no sorting is applied
         });
     
         return (
@@ -376,9 +362,10 @@ const handleGenreSelect = (genre) => {
                 <table>
                     <thead>
                         <tr>
+                            {/* Artist Name Sorting */}
                             <th
                                 onClick={() => {
-                                    const newSortOrder = artistNameSortOrder === 'asc' ? 'desc' : 'asc'; 
+                                    const newSortOrder = artistNameSortOrder === 'asc' ? 'desc' : 'asc';
                                     setArtistNameSortOrder(newSortOrder);
                                     setSongNameSortOrder(null);
                                     setPlayCountSortOrder(null);
@@ -390,6 +377,8 @@ const handleGenreSelect = (genre) => {
                             >
                                 Artist {artistNameSortOrder === 'asc' ? '▲' : '▼'}
                             </th>
+    
+                            {/* Song Name Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = songNameSortOrder === 'asc' ? 'desc' : 'asc';
@@ -404,6 +393,8 @@ const handleGenreSelect = (genre) => {
                             >
                                 Song Name {songNameSortOrder === 'asc' ? '▲' : '▼'}
                             </th>
+    
+                            {/* Play Count Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = playCountSortOrder === 'desc' ? 'asc' : 'desc';
@@ -418,6 +409,8 @@ const handleGenreSelect = (genre) => {
                             >
                                 Play Count {playCountSortOrder === 'desc' ? '▼' : '▲'}
                             </th>
+    
+                            {/* Likes Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = likesSortOrder === 'desc' ? 'asc' : 'desc';
@@ -432,6 +425,8 @@ const handleGenreSelect = (genre) => {
                             >
                                 Likes {likesSortOrder === 'desc' ? '▼' : '▲'}
                             </th>
+    
+                            {/* Follower Count Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = followerCountSortOrder === 'desc' ? 'asc' : 'desc';
@@ -446,12 +441,16 @@ const handleGenreSelect = (genre) => {
                             >
                                 Follower Count {followerCountSortOrder === 'desc' ? '▼' : '▲'}
                             </th>
+    
+                            {/* Genre Filtering */}
                             <th
-                            onClick={handleGenreClick}
-                            style={{ cursor: 'pointer', color: '#fff', textDecoration: 'underline' }}
-                        >
-                            {selectedGenre || 'All Genres ▼'}
-                        </th>
+                                onClick={handleGenreClick}
+                                style={{ cursor: 'pointer', color: '#fff', textDecoration: 'underline' }}
+                            >
+                                {selectedGenre || 'All Genres ▼'}
+                            </th>
+    
+                            {/* Release Date Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = releaseDateSortOrder === 'desc' ? 'asc' : 'desc';
@@ -465,17 +464,25 @@ const handleGenreSelect = (genre) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedSongs.map((song) => (
-                            <tr key={song.song_id}>
-                                <td>{song.artistname || 'N/A'}</td>
-                                <td>{song.title || 'N/A'}</td>
-                                <td>{song.play_count || 0}</td>
-                                <td>{song.likes || 0}</td>
-                                <td>{song.follower_count || 'N/A'}</td>
-                                <td>{song.genre_type || 'N/A'}</td>
-                                <td>{formatDate(song.song_releasedate)}</td>
+                        {sortedSongs.length > 0 ? (
+                            sortedSongs.map((song) => (
+                                <tr key={song.song_id}>
+                                    <td>{song.artistname || 'N/A'}</td>
+                                    <td>{song.title || 'N/A'}</td>
+                                    <td>{song.play_count || 0}</td>
+                                    <td>{song.likes || 0}</td>
+                                    <td>{song.follower_count || 'N/A'}</td>
+                                    <td>{song.genre_type || 'N/A'}</td>
+                                    <td>{formatDate(song.song_releasedate)}</td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="7" style={{ textAlign: 'center', color: '#FF0000' }}>
+                                    No artists or songs found.
+                                </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
