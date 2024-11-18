@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
@@ -15,6 +15,7 @@ const getCurrentMonthRange = () => {
 
 
 const AdminReports = () => {
+    const dropdownRef = useRef(null); 
     const navigate = useNavigate();
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
@@ -62,7 +63,23 @@ const AdminReports = () => {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
         }
     };
-
+    useEffect(() => {
+        const handleOutsideClick = (event) => {
+            const isClickInsideRoleDropdown =
+                dropdownRef.current && dropdownRef.current.contains(event.target);
+    
+            if (!isClickInsideRoleDropdown) {
+                setUsernameDropdown(null); // Close username dropdown
+                setRoleDropdownVisible(false); // Close role dropdown
+            }
+        };
+    
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        };
+    }, []);
+    
     useEffect(() => {
         const fetchReports = async () => {
             await fetchData('users', { startDate: dateRange.startDate, endDate: dateRange.endDate }, (data) => {
@@ -167,15 +184,13 @@ const AdminReports = () => {
                 }
                 return true; // Both
             });
-    
-    
             const toggleUsernameDropdown = (userId, event) => {
-                const rect = event.target.getBoundingClientRect(); // Get the position of the clicked element
+                const rect = event.target.getBoundingClientRect();
                 setUsernameDropdownPosition({
                     x: rect.left + window.scrollX,
                     y: rect.bottom + window.scrollY,
                 });
-                setUsernameDropdown((prev) => (prev === userId ? null : userId));
+                setUsernameDropdown((prev) => (prev === userId ? null : userId)); // Toggle dropdown
             };
     const handleCheckboxToggle = () => setIsAllUsersChecked((prev) => !prev);
 
@@ -214,7 +229,13 @@ const AdminReports = () => {
                                     {header === 'Subscription Status' && ` (${subscriptionStatusFilter})`}
                                     {isRoleColumn && (
                                         <span
-                                            style={{ marginLeft: '5px', cursor: 'pointer' }}
+                                        style={{
+                                            marginLeft: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            color: 'black',
+                                        }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setRoleDropdownVisible((prev) => !prev);

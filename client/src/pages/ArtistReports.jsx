@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Line, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -38,7 +38,33 @@ const ArtistReports = () => {
     const [showComparison, setShowComparison] = useState(false);
     const [platformActivity, setPlatformActivity] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
-
+    const location = useLocation();
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const artistIdFromUrl = queryParams.get('artist_id');
+        if (artistIdFromUrl) {
+            setArtistId(artistIdFromUrl);
+            fetchArtistInfo(artistIdFromUrl);
+        }
+    }, [location]);
+    
+    const fetchArtistInfo = async (id) => {
+        setError(null);
+        setArtistInfo(null);
+        setLoading(true);
+    
+        try {
+            const response = await axios.get(`${apiUrl}/artists/${id}`);
+            console.log("Artist data received:", response.data);
+            setArtistInfo(response.data);
+        } catch (err) {
+            console.error("Error details:", err);
+            setError(err.response?.data?.error || 'An error occurred while fetching artist info');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
     const handleFetchArtistInfo = async (e) => {
         e.preventDefault();
         setError(null);
@@ -252,7 +278,6 @@ const ArtistReports = () => {
                 
                 <button type="submit">Generate Report</button>
             </form>
-
             {loading ? (
                 <div className="loading">
                     <p>Searching<span className="dots">...</span></p>
