@@ -21,6 +21,9 @@ const Update = () => {
     const handleGoHome = () => {
         navigate('/artist');
     };
+
+    console.log("artistId:", artistId);
+
     // Fetch the current artist data to pre-fill the form
     useEffect(() => {
         const fetchArtistData = async () => {
@@ -61,15 +64,15 @@ const Update = () => {
             formData.append(key, artist[key]);
         });
 
+        formData.forEach((value, key) => {
+            console.log(`${key}:`, value);
+        });
+
         try {
-            await axios.put(`${apiUrl}/artists/${artistId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            await axios.put(`${apiUrl}/artists/${artistId}`, formData);
             navigate("/artist");
         } catch (err) {
-            console.log(err);
+            console.log("Error during update:",err);
         }
     };
 

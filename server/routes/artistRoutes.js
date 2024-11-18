@@ -17,6 +17,8 @@ const db = mysql2.createPool({
     database: process.env.DB_NAME, 
 });
 
+const upload = multer();
+
 router.get('/albums/:albumId/details', async (req, res) => {
     const { albumId } = req.params;
     const userId = req.user?.id || 1; // Replace with actual user ID logic
@@ -204,26 +206,51 @@ router.get('/targetalbum/:albumId', (req, res) => {
 
 
 // Add artist
-router.post("/", (req, res) => {
-    const query = `INSERT INTO artist (artistname, artist_bio, 
-    artist_image, artist_event, awards, genre_type, follower_count, is_verified) VALUES(?)`;
-    
+router.post("/", upload.single('artist_image'), (req, res) => {
+    // Extract form fields from `req.body`
+    const {
+        artistname,
+        artist_bio,
+        artist_event,
+        awards,
+        genre_type,
+        follower_count,
+        is_verified,
+    } = req.body;
+
+    // Handle the `artist_image` field
+    let artist_image = null;
+    if (req.file) {
+        artist_image = req.file.buffer; // Assuming you're storing the image as binary data in the database
+    }
+
+    // SQL query for inserting the artist
+    const query = `INSERT INTO artist (
+        artistname, artist_bio, artist_image, artist_event, awards, 
+        genre_type, follower_count, is_verified
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
     const values = [
-        req.body.artistname,
-        req.body.artist_bio,
-        req.body.artist_image,
-        req.body.artist_event,
-        req.body.awards,
-        req.body.genre_type,
-        req.body.follower_count,
-        req.body.is_verified,
+        artistname,
+        artist_bio,
+        artist_image,
+        artist_event,
+        awards,
+        genre_type,
+        follower_count || 0, // Default to 0 if not provided
+        is_verified || 0,    // Default to 0 if not provided
     ];
 
-    db.query(query, [values], (err, data) => {
-        if (err) return res.json(err);
-        return res.json("Artist has been created woo!");
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error inserting artist:', err);
+            return res.status(500).json({ message: 'Error creating artist', error: err });
+        }
+
+        return res.status(201).json({ message: 'Artist has been created woo!', artistId: result.insertId });
     });
 });
+
 
 // Create album
 router.post("/albums/:artistId", (req, res) => {
@@ -241,7 +268,7 @@ router.post("/albums/:artistId", (req, res) => {
 
  
 //create song into album
-const upload = multer();
+
 
 router.post("/albums/:albumId/songs/:artistId", upload.single('mp3_data'), async (req, res) => {
     const query = `INSERT INTO song (title, songimage, duration, song_releasedate, genre_type, song_language, file_path, mp3_data) VALUES (?)`;
@@ -372,12 +399,33 @@ router.delete("/:id", (req, res) => {
 });
 
 // Update an artist
-router.put('/:id', (req, res) => {
+
+
+router.put('/:id', upload.single('artist_image'), (req, res) => {
     const artistId = req.params.id;
+
+    // Extracting form fields from `req.body`
+    const {
+        artistname,
+        artist_bio,
+        artist_event,
+        awards,
+        genre_type,
+        follower_count,
+        is_verified
+    } = req.body;
+
+    // Handling `artist_image` if provided
+    let artist_image = null;
+    if (req.file) {
+        artist_image = req.file.buffer; // Assuming you're saving the image as binary data
+    }
+
+    // SQL query for updating artist information
     const query = `UPDATE artist SET 
         artistname = COALESCE(NULLIF(?, ''), artistname), 
         artist_bio = COALESCE(NULLIF(?, ''), artist_bio), 
-        artist_image = COALESCE(NULLIF(?, ''), artist_image), 
+        artist_image = COALESCE(?, artist_image), 
         artist_event = COALESCE(NULLIF(?, ''), artist_event), 
         awards = COALESCE(NULLIF(?, ''), awards), 
         genre_type = COALESCE(NULLIF(?, ''), genre_type), 
@@ -386,21 +434,31 @@ router.put('/:id', (req, res) => {
         WHERE artist_id = ?`;
 
     const values = [
-        req.body.artistname,
-        req.body.artist_bio,
-        req.body.artist_image,
-        req.body.artist_event,
-        req.body.awards,
-        req.body.genre_type,
-        req.body.follower_count,
-        req.body.is_verified,
+        artistname,
+        artist_bio,
+        artist_image,
+        artist_event,
+        awards,
+        genre_type,
+        follower_count,
+        is_verified,
+        artistId, // Artist ID for WHERE clause
     ];
 
-    db.query(query, [...values, artistId], (err, data) => {
-        if (err) return res.json(err);
-        return res.json("Artist has been updated!");
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error updating artist:', err);
+            return res.status(500).json({ message: 'Error updating artist', error: err });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Artist not found' });
+        }
+
+        return res.status(200).json({ message: 'Artist has been updated!' });
     });
 });
+
 
 
 router.get('/play/:songId', (req, res) => {
