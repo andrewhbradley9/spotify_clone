@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Line, Bar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     LineElement,
@@ -133,19 +133,19 @@ const ArtistReports = () => {
     };
 
     // Function to fetch platform activity
-    const fetchPlatformActivity = async () => {
-        try {
-            const response = await axios.get(`http://localhost:3360/artists/activity/recent?filter=${dateFilter}`);
-            setPlatformActivity(response.data);
-        } catch (err) {
-            console.error('Error fetching platform activity:', err);
-        }
-    };
-
-    // Call fetchPlatformActivity when component mounts
     useEffect(() => {
+        const fetchPlatformActivity = async () => {
+            try {
+                const response = await axios.get(`http://localhost:3360/artists/activity/recent?filter=${dateFilter}`);
+                setPlatformActivity(response.data);
+            } catch (err) {
+                console.error('Error fetching platform activity:', err);
+            }
+        };
+    
         fetchPlatformActivity();
-    }, [dateFilter]);
+    }, [dateFilter]); // Add dateFilter if it's used in the URL
+    
 
     // Add this function to filter song data
     const filterSongsByDate = (songs) => {
@@ -202,7 +202,9 @@ const ArtistReports = () => {
 
     return (
         <div>
-            <button className="cancel" onClick={handleGoHome}>Home</button>
+            <div className="home-button-container">
+    <           button className="cancel" onClick={handleGoHome}>Back Home</button>
+            </div>
             <h1>Artist Reports</h1>
             
             <form onSubmit={handleFetchArtistInfo} className="comparison-form">

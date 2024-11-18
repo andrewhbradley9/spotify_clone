@@ -18,7 +18,7 @@ const AdminReports = () => {
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
     const [activeTab, setActiveTab] = useState('users');
-    const [showDropdown, setShowDropdown] = useState(false);
+    const [setShowDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [usernameDropdown, setUsernameDropdown] = useState(null); // State for username dropdown
     const [roleDropdownVisible, setRoleDropdownVisible] = useState(false);
@@ -339,9 +339,9 @@ const AdminReports = () => {
     const handleGoHome = () => navigate('/artist');
     return (
         <div>
-            <button className="cancel" onClick={handleGoHome}>
-                Home
-            </button>
+            <div className="home-button-container">
+    <           button className="cancel" onClick={handleGoHome}>Back Home</button>
+            </div>
             <h1>Admin Reports</h1>
             <div><p>
                     <label>

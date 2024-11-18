@@ -9,6 +9,35 @@
     align-items: center;
 }
 
+.home-button-container {
+    display: flex; /* Use flexbox for alignment */
+    justify-content: flex-start; /* Align to the left */
+    align-items: center; /* Vertically center the button */
+    margin: 40px; /* Add some spacing */
+    position: relative; /* Allows positioning with top/left */
+}
+
+.cancel {
+    padding: 8px 16px; /* Space inside the button */
+    background-color: red; /* Button color */
+    color: white; /* Text color */
+    border: none; /* No border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Changes cursor on hover */
+    font-weight: bold; /* Bold text */
+    transition: background-color 0.3s ease; /* Smooth color change */
+    position: relative; /* For additional positioning tweaks */
+    top: -200px; /* Move button up by 10px */
+    left: 0; /* Adjust horizontal position */
+}
+
+.cancel:hover {
+    background-color: darkred; /* Hover effect */
+}
+
+
+
+
 /* Parent container to ensure proper alignment */
 .row-container, .song-row {
     position: relative; /* Ensure absolute positioning works properly */

@@ -23,41 +23,34 @@ const ArtistPage = () => {
     console.log("authToken:", authToken);
 
     useEffect(() => {
-        const fetchArtistAndAlbums = async () => {
+        const fetchArtistDetails = async () => {
+            setLoading(true);
             try {
-                const [artistRes, albumsRes] = await Promise.all([
-                    axios.get(`${apiUrl}/artists/${artistId}`, {
-                        headers: { Authorization: `Bearer ${authToken}` },
-                    }),
-                    axios.get(`${apiUrl}/artists/albums/${artistId}`, {
-                        headers: { Authorization: `Bearer ${authToken}` },
-                    }),
-                ]);
-
-                setArtist(artistRes.data);
-
-                const albumsWithSongs = await Promise.all(
-                    albumsRes.data.map(async (album) => {
-                        const songsRes = await axios.get(
-                            `${apiUrl}/artists/albums/${album.album_id}/songs/${artistId}`,
-                            {
-                                headers: { Authorization: `Bearer ${authToken}` },
-                            }
-                        );
-                        return { ...album, songs: songsRes.data };
-                    })
-                );
-                setAlbums(albumsWithSongs);
+                // Use the new endpoint
+                const response = await axios.get(`${apiUrl}/artists/artist/${artistId}/details`, {
+                    params: {
+                        limit: 10, // Adjust the limit based on your pagination setup
+                        offset: 0, // Start at the first page
+                    },
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+    
+                // The response will include paginated artist details, albums, and songs
+                const { artist, albums } = response.data;
+    
+                setArtist(artist); // Set artist details
+                setAlbums(albums); // Include albums and their songs
             } catch (err) {
+                console.error('Error fetching artist details:', err);
                 setError('Error fetching artist details');
-                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchArtistAndAlbums();
+    
+        fetchArtistDetails();
     }, [artistId, authToken]);
+    
 
     console.log("artistId and userId", loggedInUserId, artistId);
 

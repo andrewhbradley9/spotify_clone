@@ -32,12 +32,12 @@ const ListenerReports = () => {
     const [topArtists, setTopArtists] = useState([]);
     const [songLimit, setSongLimit] = useState(10); 
     const [artistLimit, setArtistLimit] = useState(10); 
-    const [sortOrder, setSortOrder] = useState("most");
+    const [sortOrder] = useState("most");
     const [mostPlayedGenres, setMostPlayedGenres] = useState([]);
     const { startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
-    const [startDate, setStartDate] = useState(defaultStartDate);
-    const [endDate, setEndDate] = useState(defaultEndDate);
-    const [dateRangeOption, setDateRangeOption] = useState("currentMonth");
+    const [startDate] = useState(defaultStartDate);
+    const [endDate] = useState(defaultEndDate);
+    const [dateRangeOption] = useState("currentMonth");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -145,7 +145,10 @@ const ListenerReports = () => {
 
     return (
         <div>
-            <button className="cancel" onClick={handleGoHome}>Home</button>
+            <div className="home-button-container">
+    <           button className="cancel" onClick={handleGoHome}>Back Home</button>
+            </div>
+            
             <h1>Monthly Reports</h1>
             <section>
                 <h2>Top Songs</h2>

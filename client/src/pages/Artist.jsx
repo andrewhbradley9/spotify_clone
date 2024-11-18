@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAudio } from '../context/AudioContext';
+import { debounce } from 'lodash';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -9,13 +10,13 @@ const Artist = () => {
     const { playSong } = useAudio();
     const [artists, setArtists] = useState([]);
     const [topSongs, setTopSongs] = useState([]); // State for top songs
-    const [topArtists, setTopArtists] = useState([]); // State for top artists
+    // const [topArtists, setTopArtists] = useState([]); // State for top artists
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState({ artists: [], songs: [] });
     const [isSearching, setIsSearching] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const userRole = localStorage.getItem("role"); // Fetch user role from localStorage
+    const userRole = localStorage.getItem('role'); // Fetch user role from localStorage
 
     useEffect(() => {
         // Fetch artists, top songs, and top artists
@@ -27,22 +28,22 @@ const Artist = () => {
                 setArtists(artistRes.data);
 
                 // Fetch top songs
-                const songRes = await axios.get(`${apiUrl}/artists/songs/top10`);
+                const songRes = await axios.get(`${apiUrl}/artists/songs/top5`);
                 if (Array.isArray(songRes.data)) {
                     setTopSongs(songRes.data); // Set top songs
                 } else {
-                    console.error("Unexpected response structure for top songs:", songRes.data);
+                    console.error('Unexpected response structure for top songs:', songRes.data);
                 }
 
-                // Fetch top artists
-                const topArtistRes = await axios.get(`${apiUrl}/artists/artists/top10`);
-                if (Array.isArray(topArtistRes.data)) {
-                    setTopArtists(topArtistRes.data); // Set top artists
-                } else {
-                    console.error("Unexpected response structure for top artists:", topArtistRes.data);
-                }
+                // // Fetch top artists
+                // const topArtistRes = await axios.get(`${apiUrl}/artists/artists/top10`);
+                // if (Array.isArray(topArtistRes.data)) {
+                //     setTopArtists(topArtistRes.data); // Set top artists
+                // } else {
+                //     console.error('Unexpected response structure for top artists:', topArtistRes.data);
+                // }
             } catch (err) {
-                console.error("Error fetching data:", err);
+                console.error('Error fetching data:', err);
             } finally {
                 setLoading(false);
             }
@@ -51,25 +52,24 @@ const Artist = () => {
         fetchArtistsTopSongsAndTopArtists();
     }, []); // Run on mount
 
-    const handleSearch = async (e) => {
-        const term = e.target.value;
-        setSearchTerm(term);
-
+    // Debounced search function
+    const handleSearch = debounce(async (term) => {
         if (term.length > 0) {
             setIsSearching(true);
             setLoading(true);
             try {
                 const [artistRes, songRes] = await Promise.all([
                     axios.get(`${apiUrl}/artists/search/artistname?term=${encodeURIComponent(term)}`),
-                    axios.get(`${apiUrl}/artists/search/songname?term=${encodeURIComponent(term)}`)
+                    axios.get(`${apiUrl}/artists/search/songname?term=${encodeURIComponent(term)}`),
                 ]);
-
                 setSearchResults({
                     artists: artistRes.data || [],
-                    songs: songRes.data || []
+                    songs: songRes.data || [],
                 });
             } catch (err) {
-                console.error("Search error:", err);
+                if (process.env.NODE_ENV !== 'production') {
+                    console.error('Search error:', err);
+                }
                 setSearchResults({ artists: [], songs: [] });
             } finally {
                 setLoading(false);
@@ -78,6 +78,13 @@ const Artist = () => {
             setIsSearching(false);
             setSearchResults({ artists: [], songs: [] });
         }
+    }, 300);
+
+    // Input change handler
+    const handleInputChange = (e) => {
+        const term = e.target.value;
+        setSearchTerm(term);
+        handleSearch(term); // Debounced search
     };
 
     const isTabVisible = (role) => userRole === role || userRole === 'admin'; // Admins can see all tabs
@@ -88,17 +95,17 @@ const Artist = () => {
             <div className="tab-navigation">
                 {isTabVisible('admin') && (
                     <button className={`fame ${userRole === 'admin' ? 'active-tab' : ''}`}>
-                        <Link to={`/AdminReports`}>Admin Report</Link>
+                        <Link to="/AdminReports">Admin Report</Link>
                     </button>
                 )}
                 {isTabVisible('listener') && (
                     <button className={`fame ${userRole === 'listener' ? 'active-tab' : ''}`}>
-                        <Link to={`/ListenerReports`}>Listener Report</Link>
+                        <Link to="/ListenerReports">Listener Report</Link>
                     </button>
                 )}
                 {isTabVisible('artist') && (
                     <button className={`fame ${userRole === 'artist' ? 'active-tab' : ''}`}>
-                        <Link to={`/ArtistReports`}>Artist Report</Link>
+                        <Link to="/ArtistReports">Artist Report</Link>
                     </button>
                 )}
             </div>
@@ -109,7 +116,7 @@ const Artist = () => {
                     className="search-bar"
                     placeholder="Search for artists or songs..."
                     value={searchTerm}
-                    onChange={handleSearch}
+                    onChange={handleInputChange} // Use the updated input change handler
                 />
             </div>
 
@@ -117,7 +124,9 @@ const Artist = () => {
                 <div className="search-results">
                     {loading ? (
                         <div className="loading">
-                            <p>Searching<span className="dots">...</span></p>
+                            <p>
+                                Searching<span className="dots">...</span>
+                            </p>
                         </div>
                     ) : (
                         <>
@@ -126,7 +135,11 @@ const Artist = () => {
                                     <h2>Artists</h2>
                                     <div className="artists">
                                         {searchResults.artists.map((artist) => (
-                                            <Link to={`/artist/${artist.artist_id}`} key={artist.artist_id} className="artist-link">
+                                            <Link
+                                                to={`/artist/${artist.artist_id}`}
+                                                key={artist.artist_id}
+                                                className="artist-link"
+                                            >
                                                 <div className="artist">
                                                     {artist.artist_image ? (
                                                         <img src={artist.artist_image} alt={artist.artistname} />
@@ -134,7 +147,7 @@ const Artist = () => {
                                                         <p>No image available</p>
                                                     )}
                                                     <h2>{artist.artistname}</h2>
-                                                    <p>{artist.genre_type || "Unknown genre"}</p>
+                                                    <p>{artist.genre_type || 'Unknown genre'}</p>
                                                     {artist.is_verified && <p className="verified">✓ Verified Artist</p>}
                                                 </div>
                                             </Link>
@@ -172,7 +185,7 @@ const Artist = () => {
                 </div>
             ) : (
                 <>
-                    <h2>Top 10 Songs</h2>
+                    <h2>Top 5 Songs</h2>
                     <div className="top-songs">
                         {topSongs.length > 0 ? (
                             topSongs.map((song) => (
@@ -190,8 +203,8 @@ const Artist = () => {
                         )}
                     </div>
 
-                    <h2>Top 10 Artists</h2>
-                    <div className="top-artists">
+                    {/* <h2></h2> */}
+                    {/* <div className="top-artists">
                         {topArtists.length > 0 ? (
                             topArtists.map((artist) => (
                                 <Link to={`/artist/${artist.artist_id}`} key={artist.artist_id} className="artist-link">
@@ -202,7 +215,7 @@ const Artist = () => {
                                             <p>No image available</p>
                                         )}
                                         <h2>{artist.artistname}</h2>
-                                        <p>{artist.genre_type || "Unknown genre"}</p>
+                                        <p>{artist.genre_type || 'Unknown genre'}</p>
                                         {artist.is_verified && <p className="verified">✓ Verified Artist</p>}
                                     </div>
                                 </Link>
@@ -210,7 +223,7 @@ const Artist = () => {
                         ) : (
                             <p>No top artists available.</p>
                         )}
-                    </div>
+                    </div> */}
 
                     <h2>Artists</h2>
                     <div className="artists">
@@ -223,7 +236,7 @@ const Artist = () => {
                                         <p>No image available</p>
                                     )}
                                     <h2>{artist.artistname}</h2>
-                                    <p>{artist.genre_type || "Unknown genre"}</p>
+                                    <p>{artist.genre_type || 'Unknown genre'}</p>
                                     {artist.is_verified && <p className="verified">✓ Verified Artist</p>}
                                 </div>
                             </Link>
@@ -231,7 +244,7 @@ const Artist = () => {
                     </div>
 
                     <div className="button-container">
-                        {userRole === "admin" && (
+                        {userRole === 'admin' && (
                             <button className="add">
                                 <Link to="/add">Add new Artist</Link>
                             </button>
@@ -244,4 +257,3 @@ const Artist = () => {
 };
 
 export default Artist;
-
