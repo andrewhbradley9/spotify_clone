@@ -281,7 +281,9 @@ const ListenerReports = () => {
         });
     
         setFilteredSongs(filtered);
+        updateArtistTrendData(filtered); // Refresh the trend graph with the filtered data
     };
+    
     
 const handleGenreSelect = (genre) => {
     setSelectedGenre(genre); // Update selected genre
