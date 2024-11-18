@@ -243,6 +243,23 @@ const ListenerReports = () => {
             document.body
         )
     );
+    const filterByDateRange = () => {
+        if (!startDate || !endDate) {
+            alert('Please specify both start and end dates.');
+            return;
+        }
+    
+        const filtered = topSongs.filter((song) => {
+            const releaseDate = new Date(song.song_releasedate);
+            return (
+                releaseDate >= new Date(startDate) &&
+                releaseDate <= new Date(endDate)
+            );
+        });
+    
+        setFilteredSongs(filtered);
+    };
+    
 const handleGenreSelect = (genre) => {
     setSelectedGenre(genre); // Update selected genre
     setIsDropdownOpen(false); // Close dropdown
@@ -451,6 +468,37 @@ const handleGenreSelect = (genre) => {
         <div>
             <button className="cancel" onClick={handleGoHome}>Home</button>
             <h1>Monthly Reports</h1>
+            <div style={{ marginBottom: '20px' }}>
+    <label>
+        Start Date:
+        <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{ marginLeft: '10px', marginRight: '20px' }}
+        />
+    </label>
+    <label>
+        End Date:
+        <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            style={{ marginLeft: '10px' }}
+        />
+    </label>
+    <button
+        onClick={() => filterByDateRange()}
+        style={{
+            marginLeft: '20px',
+            padding: '5px 15px',
+            cursor: 'pointer',
+        }}
+    >
+        Filter
+    </button>
+</div>
+
             <input
                 type="text"
                 placeholder="Search"
