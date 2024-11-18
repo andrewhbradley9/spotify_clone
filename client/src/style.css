@@ -1690,7 +1690,7 @@ select:focus {
 }
 
 .role-cell {
-    color: #a8dadc; /* Light teal for roles */
+    color: #51b1b4; /* Light teal for roles */
     font-weight: bold;
 }
 
@@ -1745,5 +1745,25 @@ select:focus {
 .table-container .username-cell {
     color: #e63946; /* Username-specific text color */
     font-weight: bold; /* Optional: Make username stand out */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+}
+
+th {
+    background-color: #b80000;
+    color: white;
+}
+
+td {
+    background-color: #333;
+    color: white;
 }
 

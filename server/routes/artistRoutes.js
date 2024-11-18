@@ -531,6 +531,9 @@ router.get('/songs/top10', (req, res) => {
             s.song_releasedate,
             s.genre_type,
             ar.follower_count,
+            ar.artist_id,
+            a.album_name,
+            a.album_id,
             COALESCE(s.play_count, 0) AS play_count,
             COALESCE(s.likes, 0) AS likes
         FROM 
@@ -557,6 +560,9 @@ router.get('/songs/top10', (req, res) => {
             ar.artistname,
             s.song_releasedate,
             ar.follower_count,
+            a.album_name,
+            ar.artist_id,
+            a.album_id,
             COALESCE(COUNT(l.like_date), 0) AS total_likes,
             COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count
         FROM 
@@ -621,6 +627,7 @@ router.get('/artists/top10', (req, res) => {
                 ar.genre_type,
                 ar.follower_count,
                 ar.is_verified,
+                a.album_name,
                 s.title,
                 COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count,
                 COALESCE(COUNT(l.like_date), 0) AS total_likes,
@@ -670,6 +677,7 @@ router.get('/artists/top10', (req, res) => {
                 ar.follower_count,
                 ar.is_verified,
                 s.title,
+                a.album_name,
                 s.play_count AS total_play_count,
                 s.likes AS total_likes,
                 (s.play_count + s.likes) AS total_popularity_score,

@@ -21,7 +21,9 @@ const ArtistPage = () => {
     const isAuthorized = loggedInRole === 'admin' || loggedInArtistId === artistId; 
 
     console.log("authToken:", authToken);
-
+    const handleGoHome = () => {
+        navigate('/artist');
+    };
     useEffect(() => {
         const fetchArtistAndAlbums = async () => {
             try {
@@ -224,6 +226,9 @@ const ArtistPage = () => {
                         </button>
                         <button className="delete" onClick={handleDelete}>
                             Delete Artist
+                        </button>
+                        <button onClick={handleGoHome} className="uppies">
+                        Back to Artists
                         </button>
                     </>
                 )}

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ReactDOM from 'react-dom';
-
+import { useAudio } from '../context/AudioContext';
 import { Pie, Line } from 'react-chartjs-2';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
     Chart as ChartJS,
     ArcElement,
@@ -44,6 +44,7 @@ const colorMapping = {
     'Alternative': '#00CED1',
 };
 const ListenerReports = () => {
+    const [albumNameSortOrder, setAlbumNameSortOrder] = useState('asc'); // Default A-Z
     const [releaseDateSortOrder, setReleaseDateSortOrder] = useState('desc'); // Default: Most recent first
     const [searchQuery, setSearchQuery] = useState('');
     const [artistTrendData, setArtistTrendData] = useState(null);
@@ -66,7 +67,7 @@ const ListenerReports = () => {
     const [startDate, setStartDate] = useState(defaultStartDate);
     const [endDate, setEndDate] = useState(defaultEndDate);
     const [dateRangeOption, setDateRangeOption] = useState("currentMonth");
-
+    const { playSong } = useAudio();
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -140,20 +141,20 @@ const ListenerReports = () => {
     };
     
     const handleSearch = (e) => {
-        const query = e.target.value;
+        const query = e.target.value.toLowerCase(); // Convert to lowercase for case-insensitive search
         setSearchQuery(query);
     
-        const searchFilteredSongs = topSongs.filter((song) => 
-            Object.values(song).some((value) => 
-                value?.toString().toLowerCase().includes(query.toLowerCase())
-            )
-        );
+        // Filter songs based on the search query and selected genre
+        const searchFilteredSongs = topSongs.filter((song) => {
+            const values = Object.values(song).map((value) => (value ? value.toString().toLowerCase() : ""));
+            return values.some((value) => value.includes(query));
+        });
     
-        setFilteredSongs(
-            selectedGenre === 'All Genres'
-                ? searchFilteredSongs // Show all matching songs if "All" genre is selected
-                : searchFilteredSongs.filter((song) => song.genre_type === selectedGenre) // Filter by genre if selected
-        );
+        const filteredByGenre = selectedGenre && selectedGenre !== 'All Genres'
+            ? searchFilteredSongs.filter((song) => song.genre_type === selectedGenre)
+            : searchFilteredSongs;
+    
+        setFilteredSongs(filteredByGenre); // Update filtered songs
     };
     
     const formatDate = (dateString) => {
@@ -309,9 +310,8 @@ const handleGenreSelect = (genre) => {
     
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
     
+        // Define sorting logic
         const sortedSongs = [...validSongs].sort((a, b) => {
-            
-            // Alphabetical sorting for artist name
             if (artistNameSortOrder) {
                 const artistA = (a.artistname || '').toLowerCase();
                 const artistB = (b.artistname || '').toLowerCase();
@@ -320,7 +320,6 @@ const handleGenreSelect = (genre) => {
                     : artistB.localeCompare(artistA);
             }
     
-            // Alphabetical sorting for song name
             if (songNameSortOrder) {
                 const songA = (a.title || '').toLowerCase();
                 const songB = (b.title || '').toLowerCase();
@@ -329,28 +328,24 @@ const handleGenreSelect = (genre) => {
                     : songB.localeCompare(songA);
             }
     
-            // Sorting for play count (default: greatest to least)
             if (playCountSortOrder) {
                 return playCountSortOrder === 'desc'
                     ? b.play_count - a.play_count
                     : a.play_count - b.play_count;
             }
     
-            // Sorting for likes (default: greatest to least)
             if (likesSortOrder) {
                 return likesSortOrder === 'desc'
                     ? b.likes - a.likes
                     : a.likes - b.likes;
             }
     
-            // Sorting for follower count (default: greatest to least)
             if (followerCountSortOrder) {
                 return followerCountSortOrder === 'desc'
                     ? b.follower_count - a.follower_count
                     : a.follower_count - b.follower_count;
             }
     
-            // Default sorting by release date
             if (releaseDateSortOrder) {
                 const dateA = new Date(a.song_releasedate);
                 const dateB = new Date(b.song_releasedate);
@@ -360,12 +355,34 @@ const handleGenreSelect = (genre) => {
             return 0; // Default if no sorting is applied
         });
     
+        // Define ranking logic
+        const calculateRank = (index, sortOrder) => {
+            return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
+        };
+    
+        // Determine the current ranking type
+        const isRankingActive = playCountSortOrder || likesSortOrder || followerCountSortOrder;
+    
+        const getRankingType = () => {
+            if (playCountSortOrder) return "Play Count";
+            if (likesSortOrder) return "Likes";
+            if (followerCountSortOrder) return "Follower Count";
+            return "Default";
+        };
+    
+        const rankingType = getRankingType();
+    
         return (
             <div className="table-container">
                 <table>
                     <thead>
                         <tr>
-                            {/* Artist Name Sorting */}
+                            {/* Conditionally render Ranking Column */}
+                            {isRankingActive && (
+                                <th>
+                                    Ranking ({rankingType})
+                                </th>
+                            )}
                             <th
                                 onClick={() => {
                                     const newSortOrder = artistNameSortOrder === 'asc' ? 'desc' : 'asc';
@@ -380,8 +397,7 @@ const handleGenreSelect = (genre) => {
                             >
                                 Artist {artistNameSortOrder === 'asc' ? '▲' : '▼'}
                             </th>
-    
-                            {/* Song Name Sorting */}
+                            
                             <th
                                 onClick={() => {
                                     const newSortOrder = songNameSortOrder === 'asc' ? 'desc' : 'asc';
@@ -392,12 +408,28 @@ const handleGenreSelect = (genre) => {
                                     setFollowerCountSortOrder(null);
                                     setFilteredSongs(handleSort(validSongs, 'title', newSortOrder));
                                 }}
-                                style={{ cursor: 'pointer' }}
+                                style={{ cursor: 'pointer', width: '250px' }} // Adjust width as needed
                             >
                                 Song Name {songNameSortOrder === 'asc' ? '▲' : '▼'}
                             </th>
-    
-                            {/* Play Count Sorting */}
+
+                                                        <th
+                                onClick={() => {
+                                    const newSortOrder = albumNameSortOrder === 'asc' ? 'desc' : 'asc';
+                                    setAlbumNameSortOrder(newSortOrder);
+                                    setArtistNameSortOrder(null); // Reset other sort orders
+                                    setSongNameSortOrder(null);
+                                    setPlayCountSortOrder(null);
+                                    setLikesSortOrder(null);
+                                    setFollowerCountSortOrder(null);
+                                    setReleaseDateSortOrder(null);
+                                    setFilteredSongs(handleSort(validSongs, 'album_name', newSortOrder));
+                                }}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                Album {albumNameSortOrder === 'asc' ? '▲' : '▼'}
+                            </th>
+
                             <th
                                 onClick={() => {
                                     const newSortOrder = playCountSortOrder === 'desc' ? 'asc' : 'desc';
@@ -412,8 +444,6 @@ const handleGenreSelect = (genre) => {
                             >
                                 Play Count {playCountSortOrder === 'desc' ? '▼' : '▲'}
                             </th>
-    
-                            {/* Likes Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = likesSortOrder === 'desc' ? 'asc' : 'desc';
@@ -428,8 +458,6 @@ const handleGenreSelect = (genre) => {
                             >
                                 Likes {likesSortOrder === 'desc' ? '▼' : '▲'}
                             </th>
-    
-                            {/* Follower Count Sorting */}
                             <th
                                 onClick={() => {
                                     const newSortOrder = followerCountSortOrder === 'desc' ? 'asc' : 'desc';
@@ -444,8 +472,6 @@ const handleGenreSelect = (genre) => {
                             >
                                 Follower Count {followerCountSortOrder === 'desc' ? '▼' : '▲'}
                             </th>
-    
-                            {/* Genre Filtering */}
                             <th
                                 onClick={handleGenreClick}
                                 style={{ cursor: 'pointer', color: '#fff', textDecoration: 'underline' }}
@@ -453,38 +479,77 @@ const handleGenreSelect = (genre) => {
                                 {selectedGenre || 'All Genres ▼'}
                             </th>
                             <th
-                            onClick={() => {
-                                const newSortOrder = releaseDateSortOrder === 'desc' ? 'asc' : 'desc';
-                                setReleaseDateSortOrder(newSortOrder); // Toggle release date sort order
-                                setArtistNameSortOrder(null); // Reset other sort orders
-                                setSongNameSortOrder(null);
-                                setPlayCountSortOrder(null);
-                                setLikesSortOrder(null);
-                                setFollowerCountSortOrder(null);
-                                setFilteredSongs(handleSort(validSongs, 'song_releasedate', newSortOrder)); // Update sorted data
-                            }}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            Release Date {releaseDateSortOrder === 'desc' ? '▼' : '▲'}
-                        </th>
+                                onClick={() => {
+                                    const newSortOrder = releaseDateSortOrder === 'desc' ? 'asc' : 'desc';
+                                    setReleaseDateSortOrder(newSortOrder); // Toggle release date sort order
+                                    setArtistNameSortOrder(null); // Reset other sort orders
+                                    setSongNameSortOrder(null);
+                                    setPlayCountSortOrder(null);
+                                    setLikesSortOrder(null);
+                                    setFollowerCountSortOrder(null);
+                                    setFilteredSongs(handleSort(validSongs, 'song_releasedate', newSortOrder)); // Update sorted data
+                                }}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                Release Date {releaseDateSortOrder === 'desc' ? '▼' : '▲'}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {sortedSongs.length > 0 ? (
-                            sortedSongs.map((song) => (
+                            sortedSongs.map((song, index) => (
                                 <tr key={song.song_id}>
-                                    <td>{song.artistname || 'N/A'}</td>
-                                    <td>{song.title || 'N/A'}</td>
-                                    <td>{song.play_count || 0}</td>
-                                    <td>{song.likes || 0}</td>
-                                    <td>{song.follower_count || 'N/A'}</td>
-                                    <td>{song.genre_type || 'N/A'}</td>
-                                    <td>{formatDate(song.song_releasedate)}</td>
-                                </tr>
+                                {isRankingActive && <td>{index + 1}</td>}
+                                <td>
+                                    {song.artistname ? (
+                                        <Link to={`/artist/${song.artist_id}`} style={{ color: '#008CBA', textDecoration: 'none' }}>
+                                            {song.artistname}
+                                        </Link>
+                                    ) : (
+                                        'N/A'
+                                    )}
+                                </td>
+                                <td>
+                                    {song.title ? (
+                                        <button
+                                            onClick={() => playSong({ ...song, album_id: song.album_id })}
+                                            style={{
+                                                textAlign: 'left',
+                                                padding: 0,
+                                                margin: 0,
+                                                border: 'none',
+                                                background: 'none',
+                                                color: '#b80000',
+                                                cursor: 'pointer',
+                                                textDecoration: 'underline',
+                                                fontWeight: 'bold',
+                                            }}
+                                        >
+                                            {song.title}
+                                        </button>
+                                    ) : (
+                                        'N/A'
+                                    )}
+                                </td>
+                                <td>
+                                    {song.album_name ? (
+                                        <Link to={`/albums/${song.album_id}/songs/${song.artist_id}`} style={{ color: '#008CBA', textDecoration: 'none' }}>
+                                            {song.album_name}
+                                        </Link>
+                                    ) : (
+                                        'N/A'
+                                    )}
+                                </td>
+                                <td>{song.play_count || 0}</td>
+                                <td>{song.likes || 0}</td>
+                                <td>{song.follower_count || 'N/A'}</td>
+                                <td>{song.genre_type || 'N/A'}</td>
+                                <td>{formatDate(song.song_releasedate)}</td>
+                            </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="7" style={{ textAlign: 'center', color: '#FF0000' }}>
+                                <td colSpan={isRankingActive ? 8 : 7} style={{ textAlign: 'center', color: '#FF0000' }}>
                                     No artists or songs found.
                                 </td>
                             </tr>
@@ -587,7 +652,7 @@ const handleGenreSelect = (genre) => {
         <div style={{ flex: 1, marginRight: '10px' }}>
             <h2>Most Played Genres</h2>
             {filteredSongs.length > 0 ? (
-                <div className="chart-container">
+                <div className="chart-container" style={{ width: '400px', height: '400px', margin: '0 auto' }}>
                     <Pie data={calculateGenreData()} />
                 </div>
             ) : (
@@ -597,13 +662,16 @@ const handleGenreSelect = (genre) => {
         <div style={{ flex: 1, marginLeft: '10px' }}>
             <h2>Artist Trends</h2>
             {artistTrendData ? (
-                <Line data={artistTrendData} options={{ responsive: true }} />
+                <div className="chart-container" style={{ width: '400px', height: '400px', margin: '0 auto' }}>
+                    <Line data={artistTrendData} options={{ responsive: true, maintainAspectRatio: false }} />
+                </div>
             ) : (
                 <p>Loading trend data...</p>
             )}
         </div>
     </div>
 </section>
+
 
         </div>
     );

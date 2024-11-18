@@ -200,7 +200,7 @@ const AlbumSongs = () => {
             </div>
 
             <div className="navigation-buttons">
-                <Link to={`/albums/${artistId}`} className="nav-button">
+                <Link to={`/artist/${artistId}`} className="nav-button">
                     Back to Albums
                 </Link>
                 <button onClick={handleGoHome} className="nav-button">
