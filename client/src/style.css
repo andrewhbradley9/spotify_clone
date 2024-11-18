@@ -1695,7 +1695,7 @@ select:focus {
 }
 
 .date-cell {
-    color: #faeeee; /* Light color for dates */
+    color: #c97272; /* Light color for dates */
 }
 
 .dropdown-menu,
@@ -1708,5 +1708,42 @@ select:focus {
     border-radius: 4px;
     padding: 5px;
     min-width: 150px;
+}
+
+.table-container {
+    background-color: #000; /* Match the background color of your webpage */
+    padding: 10px;
+    border-radius: 5px; /* Optional: Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Optional: Add shadow */
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse; /* Remove spacing between cells */
+    color: #fff; /* Default text color */
+}
+
+.table-container th {
+    background-color: #af2020; /* Column header background color */
+    color: #fff; /* Column header text color */
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #333;
+}
+
+.table-container td {
+    background-color: #222; /* Table rows background */
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    color: #fff; /* Default text color */
+}
+
+.table-container tr:nth-child(even) td {
+    background-color: #2a2a2a; /* Alternating row color */
+}
+
+.table-container .username-cell {
+    color: #e63946; /* Username-specific text color */
+    font-weight: bold; /* Optional: Make username stand out */
 }
 

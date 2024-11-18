@@ -392,7 +392,7 @@ const AdminReports = () => {
                             checked={isAllUsersChecked}
                             onChange={handleCheckboxToggle}
                         />
-                        Show All Users Up to Date
+                        Include Total Users (not within date frames)
                         </label>
                     {renderTableWithBorders(
                         isAllUsersChecked ? data.allUsers : data.users,

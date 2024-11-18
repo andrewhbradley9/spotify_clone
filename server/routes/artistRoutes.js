@@ -529,6 +529,8 @@ router.get('/songs/top10', (req, res) => {
             COALESCE(a.album_name, 'Unknown Album') AS album_name,
             ar.artistname,
             s.song_releasedate,
+            s.genre_type,
+            ar.follower_count,
             COALESCE(s.play_count, 0) AS play_count,
             COALESCE(s.likes, 0) AS likes
         FROM 
@@ -550,9 +552,11 @@ router.get('/songs/top10', (req, res) => {
             s.song_id,
             s.title,
             s.duration,
+            s.genre_type,
             COALESCE(a.album_name, 'Unknown Album') AS album_name,
             ar.artistname,
             s.song_releasedate,
+            ar.follower_count,
             COALESCE(COUNT(l.like_date), 0) AS total_likes,
             COALESCE(ph_on_last_date.total_play_count, 0) AS total_play_count
         FROM 
