@@ -6,6 +6,15 @@ const AudioPlayer = () => {
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
 
+    // Check if user is logged in
+    const authToken = localStorage.getItem('token');
+
+    useEffect(() => {
+        if (!authToken) {
+            closePlayer(); // Close the player if the user is logged out
+        }
+    }, [authToken, closePlayer]);
+
     useEffect(() => {
         const handleTimeUpdate = () => {
             setProgress(audioElement.currentTime);
@@ -34,7 +43,8 @@ const AudioPlayer = () => {
         setProgress(newTime);
     };
 
-    if (!currentSong) return null;
+    // Do not render if there's no song or user is not logged in
+    if (!currentSong || !authToken) return null;
 
     return (
         <div className="audio-player">
@@ -49,7 +59,7 @@ const AudioPlayer = () => {
             </div>
             <div className="player-controls">
                 <button 
-                    onClick={() => isPlaying ? pauseSong() : playSong(currentSong)}
+                    onClick={() => (isPlaying ? pauseSong() : playSong(currentSong))}
                     className="play-button"
                 >
                     {isPlaying ? '⏸' : '▶'}
@@ -72,4 +82,4 @@ const AudioPlayer = () => {
     );
 };
 
-export default AudioPlayer; 
+export default AudioPlayer;

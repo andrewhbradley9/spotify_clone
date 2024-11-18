@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
-const Login = () => {
+const Login = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -19,13 +19,19 @@ const Login = () => {
                 username,
                 password,
             });
-            alert('Login successful!');
-            localStorage.setItem('token', response.data.token); // Store the token
-            localStorage.setItem('artistId', response.data.artistId); // Save artistId (if applicable)
-            localStorage.setItem('userId', response.data.userId); // Save userId
-            localStorage.setItem('role', response.data.role); // Save the user's role
-            localStorage.setItem('username', username); // Save username for reference
-            navigate('/artist'); // Redirect to home or a protected route
+
+            // Save authentication data to localStorage
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('artistId', response.data.artistId);
+            localStorage.setItem('userId', response.data.userId);
+            localStorage.setItem('role', response.data.role);
+            localStorage.setItem('username', username);
+
+            // Call the `onLogin` callback to update parent state
+            if (onLogin) onLogin();
+
+            // Redirect to the artist page
+            navigate('/artist');
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred. Please try again.');
         }
