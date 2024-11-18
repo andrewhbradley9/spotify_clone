@@ -17,6 +17,7 @@ const getCurrentMonthRange = () => {
 const AdminReports = () => {
     const dropdownRef = useRef(null); 
     const navigate = useNavigate();
+    const usernameDropdownRef = useRef(null); // Username dropdownyyy
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
     const [showDropdown, setShowDropdown] = useState(false);
@@ -65,12 +66,13 @@ const AdminReports = () => {
     };
     useEffect(() => {
         const handleOutsideClick = (event) => {
-            const isClickInsideRoleDropdown =
-                dropdownRef.current && dropdownRef.current.contains(event.target);
-    
-            if (!isClickInsideRoleDropdown) {
-                setUsernameDropdown(null); // Close username dropdown
-                setRoleDropdownVisible(false); // Close role dropdown
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+                usernameDropdownRef.current && !usernameDropdownRef.current.contains(event.target)
+            ) {
+                // Close all dropdowns if the click is outside
+                setUsernameDropdown(null);
+                setRoleDropdownVisible(false);
             }
         };
     
@@ -153,11 +155,13 @@ const AdminReports = () => {
     
         setData((prev) => ({ ...prev, [key]: sortedList })); // Update the sorted data
     };
-    
     const handleRoleFilterChange = (role) => {
+        console.log('Selected role:', role); // Debugging log
         setRoleFilter(role); // Update the role filter
-        setShowDropdown(false); // Close the dropdown after selection
+        setRoleDropdownVisible(false); // Close the dropdown
     };
+    
+    
     const handleSubscriptionStatusToggle = () => {
         setSubscriptionStatusFilter((prev) => {
             if (prev === 'Both') return 'Active';
@@ -167,15 +171,16 @@ const AdminReports = () => {
     };
     const filteredData = (list) =>
         list
-            .filter((item) => roleFilter === 'any' || item.role === roleFilter) // Apply role filter
+            .filter((item) =>
+                roleFilter === 'any' || (item.role && item.role.toLowerCase() === roleFilter)
+            )
             .filter((item) =>
                 searchQuery
                     ? item.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (item.artist_id && item.artist_id.toString().includes(searchQuery))
                     : true
-            ) // Apply search filter
+            )
             .filter((item) => {
-                // Apply subscription status filter
                 if (subscriptionStatusFilter === 'Active') {
                     return item.subscription_date && new Date(item.subscription_date) <= new Date(dateRange.endDate);
                 }
@@ -184,6 +189,7 @@ const AdminReports = () => {
                 }
                 return true; // Both
             });
+    
             const toggleUsernameDropdown = (userId, event) => {
                 const rect = event.target.getBoundingClientRect();
                 setUsernameDropdownPosition({
@@ -236,14 +242,14 @@ const AdminReports = () => {
                                             fontWeight: 'bold',
                                             color: 'black',
                                         }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setRoleDropdownVisible((prev) => !prev);
-                                                setRoleDropdownPosition({ x: e.clientX, y: e.clientY });
-                                            }}
-                                        >
-                                            ⬇
-                                        </span>
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRoleDropdownVisible((prev) => !prev);
+                                            setRoleDropdownPosition({ x: e.clientX, y: e.clientY });
+                                        }}
+                                    >
+                                        ⬇
+                                    </span>
                                     )}
                                     {isRoleColumn && roleDropdownVisible &&
                                         ReactDOM.createPortal(
@@ -263,22 +269,21 @@ const AdminReports = () => {
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                {['Any', 'Admin', 'Artist', 'Listener'].map((role) => (
-                                                    <div
-                                                        key={role}
-                                                        style={{
-                                                            padding: '5px',
-                                                            cursor: 'pointer',
-                                                            color: '#7baeb0',
-                                                        }}
-                                                        onClick={() => {
-                                                            handleRoleFilterChange(role.toLowerCase());
-                                                            setRoleDropdownVisible(false); // Close dropdown after selection
-                                                        }}
-                                                    >
-                                                        {role}
-                                                    </div>
-                                                ))}
+                                            {['Any', 'Admin', 'Artist', 'Listener'].map((role) => (
+                                                <div
+                                                    key={role}
+                                                    style={{
+                                                        padding: '5px',
+                                                        cursor: 'pointer',
+                                                        color: '#7baeb0',
+                                                    }}
+                                                    onClick={() => handleRoleFilterChange(role.toLowerCase())} // Lowercase the filter value
+                                                >
+                                                    {role}
+                                                </div>
+                                            ))}
+
+
                                             </div>,
                                             document.body // Render outside the table container
                                         )}
