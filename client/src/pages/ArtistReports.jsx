@@ -30,10 +30,10 @@ ChartJS.register(
 );
 
 
+
 const ArtistReports = () => {
     const [searchQuery, setSearchQuery] = useState(''); // For storing the search input
     const [searchResults, setSearchResults] = useState([]); // For storing the list of search results
-    const [compareArtistName, setCompareArtistName] = useState('');
     const userRole = localStorage.getItem('role');
     const [artistId, setArtistId] = useState('');
     const [compareArtistId, setCompareArtistId] = useState('');
@@ -41,7 +41,7 @@ const ArtistReports = () => {
     const [compareArtistInfo, setCompareArtistInfo] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showComparison, setShowComparison] = useState(false);
+    const [compareArtistName, setCompareArtistName] = useState('');
     const [platformActivity, setPlatformActivity] = useState([]);
     const [dateFilter] = useState('all');
     const [songs, setSongs] = useState([]);
@@ -56,7 +56,6 @@ const ArtistReports = () => {
         if (artistIdFromUrl) {
             setArtistId(artistIdFromUrl);
             fetchArtistInfo(artistIdFromUrl);
-            setArtistId((prevArtistId) => (prevArtistId ? prevArtistId : artistIdFromUrl));
         }
     }, [location]);
     const handleArtistIdChange = (e) => {
@@ -88,7 +87,13 @@ const ArtistReports = () => {
             console.error('Error fetching compare artist info:', err);
         }
     };
-    
+    useEffect(() => {
+        if (artistId) {
+            fetchArtistInfo(artistId);
+            fetchSongs(artistId);
+            fetchAlbums(artistId);
+        }
+    }, [artistId]);
     useEffect(() => {
         if (userRole === 'artist'){
             const storedArtistId = localStorage.getItem('artistId');
@@ -99,7 +104,23 @@ const ArtistReports = () => {
         }
         }
     }, []);
+    const handleSearchQueryChange = async (query) => {
+        setSearchQuery(query);
     
+        // Fetch matching artists if the query is not empty
+        if (query.trim() !== '') {
+            try {
+                const response = await axios.get(`${apiUrl}/artists/search/artistname`, {
+                    params: { term: query },
+                });
+                setSearchResults(response.data);
+            } catch (err) {
+                console.error('Error fetching artist suggestions:', err);
+            }
+        } else {
+            setSearchResults([]); // Clear suggestions when input is empty
+        }
+    };
     const fetchArtistInfo = async (id) => {
         setError(null);
         setArtistInfo(null);
@@ -128,6 +149,7 @@ const ArtistReports = () => {
             setArtistInfo(response.data);
             
             await fetchSongs(artistId);
+            await fetchAlbums(artistId);
             
             if (compareArtistId) {
                 const compareResponse = await axios.get(`${apiUrl}/artists/${compareArtistId}`);
@@ -146,81 +168,53 @@ const ArtistReports = () => {
     const handleGoHome = () => {
         navigate('/artist');
     };
-    const calculateTotals = () => {
-        if (!Array.isArray(songs) || songs.length === 0) {
-            return { totalLikes: 0, totalPlayCount: 0 };
-        }
-    
+
+    // Update the calculateTotals function
+    const calculateTotals = (artist) => {
+        if (!artist) return { totalLikes: 0, totalPlayCount: 0 };
+        
+        // Calculate totals from the songs array instead of albums
         let totalLikes = 0;
         let totalPlayCount = 0;
-    
-        songs.forEach((song, index) => {
-            totalLikes += Number(song.total_likes) || 0; // Ensure it's a number
-            totalPlayCount += Number(song.total_play_count) || 0; // Ensure it's a number
-        });
+
+        // Check if we have songs data
+        if (songs && songs.length > 0) {
+            songs.forEach(song => {
+                totalLikes += parseInt(song.total_likes) || 0;
+                totalPlayCount += parseInt(song.total_play_count) || 0;
+            });
+        }
+
         return { totalLikes, totalPlayCount };
     };
-    
-    const totals = calculateTotals();
-    const comparisonTotals = compareArtistInfo ? calculateTotals(compareArtistInfo) : null;
 
-    const followersChartData = {
-        labels: [
-            artistInfo?.artistname || 'Current Artist',
-            compareArtistInfo?.artistname || 'Comparison Artist'
-        ],
+    // Prepare comparison chart data
+    const comparisonChartData = {
+        labels: ['Followers', 'Total Likes', 'Total Play Count'],
         datasets: [
             {
-                label: 'Followers',
-                data: [
-                    artistInfo?.follower_count || 0,
-                    compareArtistInfo?.follower_count || 0,
-                ],
-                backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)'],
-                borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
+                label: artistInfo?.artistname || 'Current Artist',
+                data: artistInfo ? [
+                    artistInfo.follower_count,
+                    calculateTotals(artistInfo).totalLikes,
+                    calculateTotals(artistInfo).totalPlayCount
+                ] : [],
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderColor: 'rgba(255, 99, 132, 1)',
                 borderWidth: 1,
             },
-        ],
-    };
-
-    // Chart data for Total Likes
-    const likesChartData = {
-        labels: [
-            artistInfo?.artistname || 'Current Artist',
-            compareArtistInfo?.artistname || 'Comparison Artist'
-        ],
-        datasets: [
-            {
-                label: 'Total Likes',
+            compareArtistInfo && {
+                label: compareArtistInfo?.artistname || 'Comparison Artist',
                 data: [
-                    totals.totalLikes || 0,
-                    comparisonTotals?.totalLikes || 0,
+                    compareArtistInfo.follower_count,
+                    calculateTotals(compareArtistInfo).totalLikes,
+                    calculateTotals(compareArtistInfo).totalPlayCount
                 ],
-                backgroundColor: ['rgba(255, 159, 64, 0.5)', 'rgba(75, 192, 192, 0.5)'],
-                borderColor: ['rgba(255, 159, 64, 1)', 'rgba(75, 192, 192, 1)'],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1,
-            },
-        ],
-    };
-
-    // Chart data for Total Play Count
-    const playsChartData = {
-        labels: [
-            artistInfo?.artistname || 'Current Artist',
-            compareArtistInfo?.artistname || 'Comparison Artist'
-        ],
-        datasets: [
-            {
-                label: 'Total Plays',
-                data: [
-                    totals.totalPlayCount || 0,
-                    comparisonTotals?.totalPlayCount || 0,
-                ],
-                backgroundColor: ['rgba(153, 102, 255, 0.5)', 'rgba(255, 205, 86, 0.5)'],
-                borderColor: ['rgba(153, 102, 255, 1)', 'rgba(255, 205, 86, 1)'],
-                borderWidth: 1,
-            },
-        ],
+            }
+        ].filter(Boolean),
     };
 
     const chartOptions = {
@@ -231,6 +225,7 @@ const ArtistReports = () => {
             },
             title: {
                 display: true,
+                text: 'Artist Metrics Comparison',
             },
         },
         scales: {
@@ -260,8 +255,6 @@ const ArtistReports = () => {
 
     useEffect(() => {
         if (artistId) {
-            fetchArtistInfo(artistId);
-            fetchSongs(artistId);
             fetchPlatformActivity();
         }
     }, [dateFilter, artistId, fetchPlatformActivity]); // Add fetchPlatformActivity as a dependency
@@ -271,6 +264,22 @@ const ArtistReports = () => {
             fetchPlatformActivity();
         }
     }, [dateRange.startDate, dateRange.endDate, artistId, fetchPlatformActivity]);
+
+    
+
+    // // Add this function to filter song data
+    // const filterSongsByDate = (songs) => {
+    //     if (!songs || dateFilter === 'all') return songs;
+
+    //     const now = new Date();
+    //     const filterDate = {
+    //         'day': subDays(now, 1),
+    //         'week': subDays(now, 7),
+    //         'month': subDays(now, 30)
+    //     }[dateFilter];
+
+    //     return songs.filter(song => new Date(song.last_played) >= filterDate);
+    // };
 
     // Update the renderActivityTable function
     const renderActivityTable = () => {
@@ -314,8 +323,7 @@ const ArtistReports = () => {
                     <tbody>
                         {platformActivity.map((activity, index) => (
                             <tr key={`${activity.id}-${activity.type}-${index}`}>
-                                <td className="date-cell"
-                                style={{ color: 'black' }}>
+                                <td className="date-cell">
                                     {new Date(activity.date).toLocaleDateString()}
                                 </td>
                                 <td>{activity.type}</td>
@@ -339,53 +347,117 @@ const ArtistReports = () => {
         }
     };
 
-    const handleSearchQueryChange = async (query) => {
-        setSearchQuery(query);
-    
-        // Fetch matching artists if the query is not empty
-        if (query.trim() !== '') {
-            try {
-                const response = await axios.get(`${apiUrl}/artists/search/artistname`, {
-                    params: { term: query },
-                });
-                setSearchResults(response.data);
-            } catch (err) {
-                console.error('Error fetching artist suggestions:', err);
-            }
-        } else {
-            setSearchResults([]); // Clear suggestions when input is empty
+    // Add new state for albums
+    const [albums, setAlbums] = useState([]);
+
+    // Add function to fetch albums
+    const fetchAlbums = async (id) => {
+        try {
+            const response = await axios.get(`${apiUrl}/artists/albums/${id}`);
+            console.log("Albums data received:", response.data);
+            setAlbums(response.data);
+        } catch (err) {
+            console.error("Error fetching albums:", err);
         }
     };
-    // Update the songs performance table to use the songs state
-    const renderSongsTable = () => (
-        <table className="artist-table">
-            <thead>
-                <tr>
-                    <th>Song Title</th>
-                    <th>Album</th>
-                    <th>Duration</th>
-                    <th>Play Count</th>
-                    <th>Likes</th>
-                    <th>Performance Score</th>
-                </tr>
-            </thead>
-            <tbody>
-                {songs.map(song => {
-                    const performanceScore = (song.total_play_count || 0) + (song.total_likes || 0);
-                    return (
+
+    // Add these state variables at the top
+    const [sortConfig, setSortConfig] = useState({
+        field: null,
+        direction: 'asc'
+    });
+
+    // Add this performance score calculation function
+    const calculatePerformanceScore = (song) => {
+        // Base metrics
+        const playCount = song.total_play_count || 0;
+        const likes = song.total_likes || 0;
+        
+        // Weights for different metrics
+        const PLAY_WEIGHT = 1;
+        const LIKE_WEIGHT = 2;  // Likes are weighted more heavily than plays
+        
+        // Calculate weighted score
+        const performanceScore = (playCount * PLAY_WEIGHT) + (likes * LIKE_WEIGHT);
+        
+        return performanceScore;
+    };
+
+    // Update the sorting function to use the correct field names
+    const handleSort = (field) => {
+        let direction = 'asc';
+        if (sortConfig.field === field && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ field, direction });
+    };
+
+    // Update the renderSongsTable function to use the correct field names
+    const renderSongsTable = () => {
+        let sortedSongs = [...songs];
+        
+        if (sortConfig.field) {
+            sortedSongs.sort((a, b) => {
+                if (sortConfig.field === 'performanceScore') {
+                    const scoreA = calculatePerformanceScore(a);
+                    const scoreB = calculatePerformanceScore(b);
+                    return sortConfig.direction === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+                }
+                
+                // Map the field names to the actual properties in the song object
+                const fieldMap = {
+                    'play_count': 'total_play_count',
+                    'likes': 'total_likes'
+                };
+                
+                const field = fieldMap[sortConfig.field] || sortConfig.field;
+                const valueA = a[field] || 0;
+                const valueB = b[field] || 0;
+                return sortConfig.direction === 'asc' ? valueA - valueB : valueB - valueA;
+            });
+        }
+
+        return (
+            <table className="artist-table">
+                <thead>
+                    <tr>
+                        <th>Song Title</th>
+                        <th>Album</th>
+                        <th>Duration</th>
+                        <th onClick={() => handleSort('play_count')} style={{ cursor: 'pointer' }}>
+                            Play Count {renderSortArrow('play_count')}
+                        </th>
+                        <th onClick={() => handleSort('likes')} style={{ cursor: 'pointer' }}>
+                            Likes {renderSortArrow('likes')}
+                        </th>
+                        <th onClick={() => handleSort('performanceScore')} style={{ cursor: 'pointer' }}>
+                            Performance Score {renderSortArrow('performanceScore')}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sortedSongs.map(song => (
                         <tr key={song.song_id}>
                             <td>{song.song_title}</td>
                             <td>{song.album_name}</td>
                             <td>{song.duration}</td>
-                            <td>{song.total_play_count}</td>
-                            <td>{song.total_likes}</td>
-                            <td>{performanceScore}</td>
+                            <td>{song.total_play_count || 0}</td>
+                            <td>{song.total_likes || 0}</td>
+                            <td>{calculatePerformanceScore(song)}</td>
                         </tr>
-                    );
-                })}
-            </tbody>
-        </table>
-    );
+                    ))}
+                </tbody>
+            </table>
+        );
+    };
+
+    // Add this helper function to render the sort arrows
+    const renderSortArrow = (field) => {
+        if (sortConfig.field !== field) {
+            return '↕️';
+        }
+        return sortConfig.direction === 'asc' ? '↑' : '↓';
+    };
 
     // Add this function to handle date changes
     const handleDateChange = (key, value) => {
@@ -393,6 +465,231 @@ const ArtistReports = () => {
             ...prev,
             [key]: value
         }));
+    };
+
+    const [activeTab, setActiveTab] = useState('overview');
+
+    // Modify prepareLineChartData to accept a comparison flag
+    const prepareLineChartData = (artistInfo, compareArtistInfo = null, isComparison = false) => {
+        const datasets = [];
+        
+        if (artistInfo) {
+            datasets.push({
+                label: artistInfo.artistname,
+                data: [
+                    artistInfo.follower_count,
+                    calculateTotals(artistInfo).totalLikes,
+                    calculateTotals(artistInfo).totalPlayCount
+                ],
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.4
+            });
+        }
+
+        // Only add comparison data if it's the comparison tab
+        if (compareArtistInfo && isComparison) {
+            datasets.push({
+                label: compareArtistInfo.artistname,
+                data: [
+                    compareArtistInfo.follower_count,
+                    calculateTotals(compareArtistInfo).totalLikes,
+                    calculateTotals(compareArtistInfo).totalPlayCount
+                ],
+                borderColor: 'rgba(53, 162, 235, 1)',
+                backgroundColor: 'rgba(53, 162, 235, 0.2)',
+                tension: 0.4
+            });
+        }
+
+        return {
+            labels: ['Followers', 'Total Likes', 'Total Play Count'],
+            datasets
+        };
+    };
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'overview':
+                return (
+                    <div className="tab-content">
+                        <table className="artist-table">
+                            <thead>
+                                <tr>
+                                    <th colSpan="2">Artist Information</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th>Artist Name</th>
+                                    <td>{artistInfo?.artistname}</td>
+                                </tr>
+                                <tr>
+                                    <th>Bio</th>
+                                    <td>{artistInfo?.artist_bio}</td>
+                                </tr>
+                                <tr>
+                                    <th>Genre</th>
+                                    <td>{artistInfo?.genre_type}</td>
+                                </tr>
+                                <tr>
+                                    <th>Followers</th>
+                                    <td>{artistInfo?.follower_count}</td>
+                                </tr>
+                                <tr>
+                                    <th>Verified</th>
+                                    <td>{artistInfo?.is_verified ? 'Yes' : 'No'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div className="albums-section">
+                            <h3>Albums</h3>
+                            <table className="artist-table">
+                                <thead>
+                                    <tr>
+                                        <th>Album Name</th>
+                                        <th>Release Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {albums.map(album => (
+                                        <tr key={album.album_id}>
+                                            <td>{album.album_name}</td>
+                                            <td>{new Date(album.release_date).toLocaleDateString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="charts-container">
+                            <div className="chart-container">
+                                <h3>Performance Overview - Bar Chart</h3>
+                                <Bar 
+                                    data={{
+                                        labels: ['Followers', 'Total Likes', 'Total Play Count'],
+                                        datasets: [{
+                                            label: artistInfo?.artistname,
+                                            data: artistInfo ? [
+                                                artistInfo.follower_count,
+                                                calculateTotals(artistInfo).totalLikes,
+                                                calculateTotals(artistInfo).totalPlayCount
+                                            ] : [],
+                                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                                            borderColor: 'rgba(255, 99, 132, 1)',
+                                            borderWidth: 1,
+                                        }]
+                                    }}
+                                    options={chartOptions}
+                                />
+                            </div>
+
+                            <div className="chart-container">
+                                <h3>Performance Overview - Line Chart</h3>
+                                <Line 
+                                    data={prepareLineChartData(artistInfo, null, false)}
+                                    options={{
+                                        ...chartOptions,
+                                        elements: {
+                                            line: {
+                                                borderWidth: 2
+                                            },
+                                            point: {
+                                                radius: 6,
+                                                hoverRadius: 8
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'songs':
+                return (
+                    <div className="tab-content">
+                        <h3>Songs Performance</h3>
+                        {renderSongsTable()}
+                    </div>
+                );
+
+            case 'activity':
+                return (
+                    <div className="tab-content">
+                        {renderActivityTable()}
+                    </div>
+                );
+
+            case 'comparison':
+                return (
+                    <div className="tab-content">
+                        <div className="comparison-form">
+                            <div className="input-group">
+                                <label>
+                                Search Artist to Compare:
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => handleSearchQueryChange(e.target.value)}
+                                        placeholder="Enter Artist Name"
+                                    />
+                                    <button type="button" onClick={searchArtists}>
+                                        Search
+                                    </button>
+                                </label>
+                                <div className="search-results">
+                                <ul>
+                                        {searchResults.map((artist) => (
+                                            <li
+                                                key={artist.artist_id}
+                                                onClick={() => handleSearchSelect(artist.artist_id, artist.artistname)}
+                                                style={{ cursor: 'pointer', padding: '5px', borderBottom: '1px solid #ccc' }}
+                                            >
+                                                {artist.artistname}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {compareArtistInfo && (
+                            <div className="charts-container">
+                                {/* Bar Chart */}
+                                <div className="chart-container">
+                                    <h3>Artist Comparison - Bar Chart</h3>
+                                    <Bar data={comparisonChartData} options={chartOptions} />
+                                </div>
+
+                                {/* Line Chart */}
+                                <div className="chart-container">
+                                    <h3>Artist Comparison - Line Chart</h3>
+                                    <Line 
+                                        data={prepareLineChartData(artistInfo, compareArtistInfo, true)}
+                                        options={{
+                                            ...chartOptions,
+                                            elements: {
+                                                line: {
+                                                    borderWidth: 2
+                                                },
+                                                point: {
+                                                    radius: 6,
+                                                    hoverRadius: 8
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            default:
+                return null;
+        }
     };
     const renderArtistIdInput = () => {
         if (userRole === 'admin') {
@@ -407,6 +704,18 @@ const ArtistReports = () => {
                             placeholder="Enter Artist ID"
                             required
                         />
+                        <p onClick={() =>
+                window.open(`/artist/${artistInfo?.artist_id}`, '_blank')
+            }
+            style={{
+                
+                color: 'red', // Blue color for a link-like appearance
+                padding: '8px',
+                borderRadius: '4px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+            }}>{artistInfo?.artistname || 'Fetching...'}</p>
                     </label>
                 </div>
             );
@@ -433,6 +742,7 @@ const ArtistReports = () => {
             </div>
         );
     };
+
     return (
         <div>
             <button className="cancel" onClick={handleGoHome}>Home</button>
@@ -440,64 +750,8 @@ const ArtistReports = () => {
 
             <form onSubmit={handleFetchArtistInfo} className="comparison-form">
             {renderArtistIdInput()}
-                
-                <div className="comparison-toggle">
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={showComparison}
-                            onChange={(e) => {
-                                setShowComparison(e.target.checked);
-                                if (!e.target.checked) {
-                                    setCompareArtistId('');
-                                    setCompareArtistInfo(null);
-                                }
-                            }}
-                        />
-                        Compare with another artist
-                    </label>
-                </div>
-
-                {showComparison && (
-                    <div className="input-group">
-                    <label>
-                                    Search Artist to Compare:
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => handleSearchQueryChange(e.target.value)}
-                                        placeholder="Enter Artist Name"
-                                    />
-                                    <button type="button" onClick={searchArtists}>
-                                        Search
-                                    </button>
-                                </label>
-                                {searchResults.length > 0 && (
-                <div className="search-results">
-                    <ul>
-                        {searchResults.map((artist) => (
-                            <li
-                                key={artist.artist_id}
-                                onClick={() => handleSearchSelect(artist.artist_id, artist.artistname)}
-                                style={{ cursor: 'pointer', padding: '5px', borderBottom: '1px solid #ccc' }}
-                            >
-                                {artist.artistname}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-                        )}
-                        {compareArtistName && (
-                            <p style={{ marginTop: '10px' }}>
-                                Selected Artist for Comparison: <strong>{compareArtistName}</strong>
-                            </p>
-                        )}
-                    </div>
-                )}
-                
                 <button type="submit">Generate Report</button>
             </form>
-
 
             {loading ? (
                 <div className="loading">
@@ -507,74 +761,38 @@ const ArtistReports = () => {
                 <p style={{ color: 'red' }}>{error}</p>
             ) : artistInfo && (
                 <>
-                    {/* Artist Information Table */}
-                    <table className="artist-table">
-                        <thead>
-                            <tr>
-                                <th colSpan="2">Artist Information</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <th>Artist Name</th>
-                                <td>{artistInfo.artistname}</td>
-                            </tr>
-                            <tr>
-                                <th>Bio</th>
-                                <td>{artistInfo.artist_bio}</td>
-                            </tr>
-                            <tr>
-                                <th>Event</th>
-                                <td>{artistInfo.artist_event}</td>
-                            </tr>
-                            <tr>
-                                <th>Awards</th>
-                                <td>{artistInfo.awards}</td>
-                            </tr>
-                            <tr>
-                                <th>Genre</th>
-                                <td>{artistInfo.genre_type}</td>
-                            </tr>
-                            <tr>
-                                <th>Followers</th>
-                                <td>{artistInfo.follower_count}</td>
-                            </tr>
-                            <tr>
-                                <th>Verified</th>
-                                <td>{artistInfo.is_verified ? 'Yes' : 'No'}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    {/* Move the activity table here, right after artist info */}
-                    {renderActivityTable()}
-
-                    {/* Songs Performance Table */}
-                    <h3>Songs Performance</h3>
-                    {renderSongsTable()}
-
-                    {artistInfo && (
-                    <div className="chart-row">
-                        <div className="chart-box">
-                            <h3>Total Followers</h3>
-                            <Bar data={followersChartData} options={{ ...chartOptions, title: { text: 'Followers' } }} />
-                        </div>
-
-                        <div className="chart-box">
-                            <h3>Total Likes</h3>
-                            <Bar data={likesChartData} options={{ ...chartOptions, title: { text: 'Likes' } }} />
-                        </div>
-
-                        <div className="chart-box">
-                            <h3>Total Plays</h3>
-                            <Bar data={playsChartData} options={{ ...chartOptions, title: { text: 'Plays' } }} />
-                        </div>
+                    <div className="tab-navigation">
+                        <button 
+                            className={activeTab === 'overview' ? 'active-tab' : ''}
+                            onClick={() => setActiveTab('overview')}
+                        >
+                            Overview
+                        </button>
+                        <button 
+                            className={activeTab === 'songs' ? 'active-tab' : ''}
+                            onClick={() => setActiveTab('songs')}
+                        >
+                            Songs Performance
+                        </button>
+                        <button 
+                            className={activeTab === 'activity' ? 'active-tab' : ''}
+                            onClick={() => setActiveTab('activity')}
+                        >
+                            Recent Activity
+                        </button>
+                        <button 
+                            className={activeTab === 'comparison' ? 'active-tab' : ''}
+                            onClick={() => setActiveTab('comparison')}
+                        >
+                            Artist Comparison
+                        </button>
                     </div>
-                )}
-            </>
-        )}
-    </div>
-);
+
+                    {renderTabContent()}
+                </>
+            )}
+        </div>
+    );
 };
 
 
