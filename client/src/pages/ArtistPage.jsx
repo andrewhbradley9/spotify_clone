@@ -83,6 +83,10 @@ const ArtistPage = () => {
             console.error('Token is missing. Cannot follow or unfollow.');
             return;
         }
+        if (loggedInArtistId === artistId) {
+            alert("You can't follow yourself!");
+            return;
+        }
 
         try {
             if (isFollowing) {
@@ -111,12 +115,31 @@ const ArtistPage = () => {
             alert('Failed to update follow status. Please try again.');
         }
     };
-
+    const handleGoHome = () => {
+        navigate('/artist');
+    };
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         return new Date(dateString).toLocaleDateString('en-US', options);
     };
+    const handleDeleteAlbum = async (albumId,albumName) => {
+        try {
+            const isConfirmed = window.confirm(
+                'Are you sure you want to delete this album? This action cannot be undone.'
+            );
 
+            if (isConfirmed) {
+                await axios.delete(`${apiUrl}/artists/albums/${albumId}'`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+                alert(`Album "${albumName}" deleted successfully.`);
+                navigate(`/artist/${artistId}`);
+            }
+        } catch (err) {
+            console.error('Error deleting album:', err);
+            alert('Error deleting album. Please try again.');
+        }
+    };
     const handleDelete = async () => {
         try {
             const isConfirmed = window.confirm(
@@ -167,12 +190,15 @@ const ArtistPage = () => {
                     </p>
                 </div>
 
-                <button
-                    className={`follow-button ${isFollowing ? 'following' : 'follow'}`}
-                    onClick={handleFollowToggle}
-                >
-                    {isFollowing ? 'Following' : 'Follow'}
-                </button>
+                {loggedInArtistId !== artistId && (
+                    <button
+                        className={`follow-button ${isFollowing ? 'following' : 'follow'}`}
+                        onClick={handleFollowToggle}
+                    >
+                        {isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                )}
+
             </div>
 
             <div className="albums-section">
@@ -190,8 +216,16 @@ const ArtistPage = () => {
                                 ) : (
                                     <div className="album-placeholder">
                                         <span>{album.album_name[0]}</span>
+                                        
                                     </div>
                                 )}
+                                <button
+                                    className="delete-album-button"
+                                    onClick={() => handleDeleteAlbum(album.album_id,album.album_name)}
+                                    title="Delete Album"
+                                >
+                                    🗑️
+                                </button>
                                 <div className="album-info">
                                     <h3>{album.album_name}</h3>
                                     <p>{formatDate(album.release_date)}</p>
@@ -221,6 +255,7 @@ const ArtistPage = () => {
                     </>
                 )}
             </div>
+            <button className="cancel" onClick={handleGoHome}>Home</button>
         </div>
     );
 };

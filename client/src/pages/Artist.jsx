@@ -98,7 +98,7 @@ const Artist = () => {
                         <Link to="/AdminReports">Admin Report</Link>
                     </button>
                 )}
-                {isTabVisible('listener') && (
+                {(isTabVisible('listener') || userRole === 'artist') && (
                     <button className={`fame ${userRole === 'listener' ? 'active-tab' : ''}`}>
                         <Link to="/ListenerReports">Listener Report</Link>
                     </button>

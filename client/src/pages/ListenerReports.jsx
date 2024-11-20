@@ -14,9 +14,7 @@ import {
     CategoryScale,
     LinearScale,
 } from 'chart.js';
-
 const apiUrl = process.env.REACT_APP_API_URL;
-
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale);
 
 const getCurrentMonthRange = () => {
@@ -60,15 +58,15 @@ const ListenerReports = () => {
     const [songNameSortOrder, setSongNameSortOrder] = useState('asc'); // Default A-Z
     const [artistNameSortOrder, setArtistNameSortOrder] = useState('asc'); // Default A-Z
     const [topSongs, setTopSongs] = useState([]);
-    const [setTopArtists] = useState([]);
-    const [songLimit] = useState(10); 
-    const [artistLimit] = useState(10); 
-    const [sortOrder] = useState("most");
-    const [setMostPlayedGenres] = useState([]);
+    const [topArtists, setTopArtists] = useState([]);
+    const [songLimit, setSongLimit] = useState(10); 
+    const [artistLimit, setArtistLimit] = useState(10); 
+    const [sortOrder, setSortOrder] = useState("most");
+    const [mostPlayedGenres, setMostPlayedGenres] = useState([]);
     const { startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
     const [startDate, setStartDate] = useState(defaultStartDate);
     const [endDate, setEndDate] = useState(defaultEndDate);
-    const [dateRangeOption] = useState("currentMonth");
+    const [dateRangeOption, setDateRangeOption] = useState("currentMonth");
     const { playSong } = useAudio();
     useEffect(() => {
         const fetchData = async () => {
@@ -96,17 +94,16 @@ const ListenerReports = () => {
                     },
                 });
                 if (topArtistRes.data && Array.isArray(topArtistRes.data)) {
-                    setTopArtists(topArtistRes.data); // State setter, stable between renders
+                    setTopArtists(topArtistRes.data);
                 }
     
-                // Fetch most played genres
                 const genreRes = await axios.get(`${apiUrl}/artists/most-played/genres`, {
                     params: {
                         ...(dateRangeOption !== "currentMonth" && startDate && endDate ? { start_date: startDate, end_date: endDate } : {})
                     }
                 });
                 if (genreRes.data && Array.isArray(genreRes.data)) {
-                    setMostPlayedGenres(genreRes.data); // State setter, stable between renders
+                    setMostPlayedGenres(genreRes.data);
                 }
             } catch (err) {
                 console.log("Error fetching data:", err);
@@ -114,16 +111,7 @@ const ListenerReports = () => {
         };
     
         fetchData();
-    }, [
-        songLimit,
-        artistLimit, 
-        sortOrder, 
-        startDate, 
-        endDate, 
-        dateRangeOption, 
-        setTopArtists, 
-        setMostPlayedGenres // Include these to satisfy ESLint
-    ]);
+    }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption]);
     
     const calculateGenreData = () => {
         const genreCounts = filteredSongs.reduce((acc, song) => {
@@ -167,6 +155,7 @@ const ListenerReports = () => {
             : searchFilteredSongs;
     
         setFilteredSongs(filteredByGenre); // Update filtered songs
+        updateArtistTrendData(filteredByGenre);
     };
     
     const formatDate = (dateString) => {
@@ -298,18 +287,28 @@ const ListenerReports = () => {
     };
     
     
-const handleGenreSelect = (genre) => {
-    setSelectedGenre(genre); // Update selected genre
-    setIsDropdownOpen(false); // Close dropdown
-
-    // Filter songs by the selected genre
-    const genreFilteredSongs = genre === "All Genres" 
-        ? topSongs // Show all songs if "All" is selected
-        : topSongs.filter((song) => song.genre_type === genre);
-
-    setFilteredSongs(genreFilteredSongs); // Update table data
-    updateArtistTrendData(genreFilteredSongs); // Update chart data
-};
+    const handleGenreSelect = (genre) => {
+        setSelectedGenre(genre); // Update selected genre
+        setIsDropdownOpen(false); // Close dropdown
+    
+        // Filter songs based on the search query and the selected genre
+        const genreFilteredSongs = genre === "All Genres"
+            ? topSongs.filter((song) => {
+                const values = Object.values(song).map((value) => (value ? value.toString().toLowerCase() : ""));
+                return values.some((value) => value.includes(searchQuery));
+            })
+            : topSongs.filter((song) => {
+                const matchesGenre = song.genre_type === genre;
+                const matchesSearch = Object.values(song)
+                    .map((value) => (value ? value.toString().toLowerCase() : ""))
+                    .some((value) => value.includes(searchQuery));
+                return matchesGenre && matchesSearch;
+            });
+    
+        setFilteredSongs(genreFilteredSongs); // Update table data
+        updateArtistTrendData(genreFilteredSongs); // Update chart data
+    };
+    
 
     const handleGenreClick = (event) => {
         const rect = event.target.getBoundingClientRect();
@@ -317,8 +316,8 @@ const handleGenreSelect = (genre) => {
         setIsDropdownOpen((prev) => !prev); // Toggle dropdown visibility
     };
     const renderCombinedTable = (artists, songs) => {
-        // const isEnglish = (text) =>
-        //     /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
+        const isEnglish = (text) =>
+            /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
     
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
     
@@ -368,9 +367,9 @@ const handleGenreSelect = (genre) => {
         });
     
         // Define ranking logic
-        // const calculateRank = (index, sortOrder) => {
-        //     return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
-        // };
+        const calculateRank = (index, sortOrder) => {
+            return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
+        };
     
         // Determine the current ranking type
         const isRankingActive = playCountSortOrder || likesSortOrder || followerCountSortOrder;
@@ -511,7 +510,7 @@ const handleGenreSelect = (genre) => {
                         {sortedSongs.length > 0 ? (
                             sortedSongs.map((song, index) => (
                                 <tr key={song.song_id}>
-                                {isRankingActive && <td>{index + 1}</td>}
+                                {isRankingActive && <td>{calculateRank(index, rankingType === "Play Count" ? playCountSortOrder : rankingType === "Likes" ? likesSortOrder : followerCountSortOrder)}</td>}
                                 <td>
                                     {song.artistname ? (
                                         <Link to={`/artist/${song.artist_id}`} style={{ color: '#008CBA', textDecoration: 'none' }}>

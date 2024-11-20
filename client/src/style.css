@@ -1727,4 +1727,18 @@ select:focus {
     color: #faeeee; /* Light color for dates */
 }
 
+.chart-row {
+    display: flex; /* Use flexbox for horizontal layout */
+    justify-content: space-between; /* Distribute space evenly between charts */
+    align-items: flex-start; /* Align items to the top */
+    flex-wrap: nowrap; /* Prevent wrapping to a new line */
+    gap: 20px; /* Add spacing between the charts */
+    margin-top: 20px; /* Add top margin for spacing */
+}
 
+.chart-box {
+    flex: 1; /* Allow charts to take equal width */
+    max-width: 30%; /* Limit maximum width to 30% */
+    min-width: 250px; /* Prevent the charts from becoming too small */
+    margin: 10px; /* Add a margin around each chart */
+}

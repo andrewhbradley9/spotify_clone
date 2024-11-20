@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
-
 const apiUrl = process.env.REACT_APP_API_URL;
-
 const getCurrentMonthRange = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -17,12 +15,13 @@ const getCurrentMonthRange = () => {
 
 
 const AdminReports = () => {
+    const dropdownRef = useRef(null); 
     const navigate = useNavigate();
+    const usernameDropdownRef = useRef(null); // Username dropdownyyy
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
-    const [setShowDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [roleDropdownPosition, setRoleDropdownPosition] = useState({ x: 200, y: 400 });
+    const [roleDropdownPosition, setRoleDropdownPosition] = useState({ x: 0, y: 0 });
     const [usernameDropdownPosition, setUsernameDropdownPosition] = useState({ x: 0, y: 0 });
     const [isAllUsersChecked, setIsAllUsersChecked] = useState(false);
     const [subscriptionStatusFilter, setSubscriptionStatusFilter] = useState('Both');
@@ -38,17 +37,17 @@ const AdminReports = () => {
         allUsers: [], // Ensure this is an array
         subscribers: [],
     });    
-    // const [setLists] = useState({
-    //     inactiveSubscribers: [],
-    //     cumulativeSubscribers: [],
-    // });
-    // const [show, setShow] = useState({
-    //     users: false,
-    //     allUsers: false,
-    //     subscribers: false,
-    //     inactiveSubscribers: false,
-    //     cumulativeSubscribers: false,
-    // });
+    const [lists, setLists] = useState({
+        inactiveSubscribers: [],
+        cumulativeSubscribers: [],
+    });
+    const [show, setShow] = useState({
+        users: false,
+        allUsers: false,
+        subscribers: false,
+        inactiveSubscribers: false,
+        cumulativeSubscribers: false,
+    });
     const [sortOrder, setSortOrder] = useState({
         users: 'asc',
         allUsers: 'asc',
@@ -64,7 +63,24 @@ const AdminReports = () => {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
         }
     };
-
+    useEffect(() => {
+        const handleOutsideClick = (event) => {
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+                usernameDropdownRef.current && !usernameDropdownRef.current.contains(event.target)
+            ) {
+                // Close all dropdowns if the click is outside
+                setUsernameDropdown(null);
+                setRoleDropdownVisible(false);
+            }
+        };
+    
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        };
+    }, []);
+    
     useEffect(() => {
         const fetchReports = async () => {
             await fetchData('users', { startDate: dateRange.startDate, endDate: dateRange.endDate }, (data) => {
@@ -103,19 +119,18 @@ const AdminReports = () => {
 
         fetchReports();
     }, [dateRange]);
-
-    // const handleToggle = (key) => {
-    //     const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
-    //     if (!show[key]) {
-    //         fetchData('subscribers', params, (data) =>
-    //             setLists((prev) => ({
-    //                 ...prev,
-    //                 [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
-    //             }))
-    //         );
-    //     }
-    //     setShow((prev) => ({ ...prev, [key]: !prev[key] }));
-    // };
+    const handleToggle = (key) => {
+        const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
+        if (!show[key]) {
+            fetchData('subscribers', params, (data) =>
+                setLists((prev) => ({
+                    ...prev,
+                    [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
+                }))
+            );
+        }
+        setShow((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
     
     const handleDateChange = (key, value) => setDateRange((prev) => ({ ...prev, [key]: value }));
     const handleSort = (field) => {
@@ -139,11 +154,13 @@ const AdminReports = () => {
     
         setData((prev) => ({ ...prev, [key]: sortedList })); // Update the sorted data
     };
-    
     const handleRoleFilterChange = (role) => {
+        console.log('Selected role:', role); // Debugging log
         setRoleFilter(role); // Update the role filter
-        setShowDropdown(false); // Close the dropdown after selection
+        setRoleDropdownVisible(false); // Close the dropdown
     };
+    
+    
     const handleSubscriptionStatusToggle = () => {
         setSubscriptionStatusFilter((prev) => {
             if (prev === 'Both') return 'Active';
@@ -153,15 +170,16 @@ const AdminReports = () => {
     };
     const filteredData = (list) =>
         list
-            .filter((item) => roleFilter === 'any' || item.role === roleFilter) // Apply role filter
+            .filter((item) =>
+                roleFilter === 'any' || (item.role && item.role.toLowerCase() === roleFilter)
+            )
             .filter((item) =>
                 searchQuery
                     ? item.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (item.artist_id && item.artist_id.toString().includes(searchQuery))
                     : true
-            ) // Apply search filter
+            )
             .filter((item) => {
-                // Apply subscription status filter
                 if (subscriptionStatusFilter === 'Active') {
                     return item.subscription_date && new Date(item.subscription_date) <= new Date(dateRange.endDate);
                 }
@@ -171,14 +189,13 @@ const AdminReports = () => {
                 return true; // Both
             });
     
-    
             const toggleUsernameDropdown = (userId, event) => {
-                const rect = event.target.getBoundingClientRect(); // Get the position of the clicked element
+                const rect = event.target.getBoundingClientRect();
                 setUsernameDropdownPosition({
                     x: rect.left + window.scrollX,
                     y: rect.bottom + window.scrollY,
                 });
-                setUsernameDropdown((prev) => (prev === userId ? null : userId));
+                setUsernameDropdown((prev) => (prev === userId ? null : userId)); // Toggle dropdown
             };
     const handleCheckboxToggle = () => setIsAllUsersChecked((prev) => !prev);
 
@@ -217,15 +234,21 @@ const AdminReports = () => {
                                     {header === 'Subscription Status' && ` (${subscriptionStatusFilter})`}
                                     {isRoleColumn && (
                                         <span
-                                            style={{ marginLeft: '5px', cursor: 'pointer' }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setRoleDropdownVisible((prev) => !prev);
-                                                setRoleDropdownPosition({ x: e.clientX, y: e.clientY });
-                                            }}
-                                        >
-                                            ⬇
-                                        </span>
+                                        style={{
+                                            marginLeft: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            color: 'black',
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRoleDropdownVisible((prev) => !prev);
+                                            setRoleDropdownPosition({ x: e.clientX, y: e.clientY });
+                                        }}
+                                    >
+                                        ⬇
+                                    </span>
                                     )}
                                     {isRoleColumn && roleDropdownVisible &&
                                         ReactDOM.createPortal(
@@ -245,22 +268,21 @@ const AdminReports = () => {
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                {['Any', 'Admin', 'Artist', 'Listener'].map((role) => (
-                                                    <div
-                                                        key={role}
-                                                        style={{
-                                                            padding: '5px',
-                                                            cursor: 'pointer',
-                                                            color: '#7baeb0',
-                                                        }}
-                                                        onClick={() => {
-                                                            handleRoleFilterChange(role.toLowerCase());
-                                                            setRoleDropdownVisible(false); // Close dropdown after selection
-                                                        }}
-                                                    >
-                                                        {role}
-                                                    </div>
-                                                ))}
+                                            {['Any', 'Admin', 'Artist', 'Listener'].map((role) => (
+                                                <div
+                                                    key={role}
+                                                    style={{
+                                                        padding: '5px',
+                                                        cursor: 'pointer',
+                                                        color: '#7baeb0',
+                                                    }}
+                                                    onClick={() => handleRoleFilterChange(role.toLowerCase())} // Lowercase the filter value
+                                                >
+                                                    {role}
+                                                </div>
+                                            ))}
+
+
                                             </div>,
                                             document.body // Render outside the table container
                                         )}
@@ -337,9 +359,10 @@ const AdminReports = () => {
                                         item.username
                                     )}
                                 </td>
+                                <td>{item.user_id || 'N/A'}</td>
                                 <td>{item.role || 'N/A'}</td>
-                                <td>{item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}</td>
-                                <td>{item.subscription_date ? new Date(item.subscription_date).toLocaleString() : 'None'}</td>
+                                <td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}</td>
+                                <td>{item.subscription_date ? new Date(item.subscription_date).toLocaleDateString() : 'None'}</td>
                                 <td>{item.artist_id || 'None'}</td>
                                 <td>
                                     {item.subscription_date &&
@@ -436,7 +459,7 @@ const AdminReports = () => {
                         </label>
                     {renderTableWithBorders(
                         isAllUsersChecked ? data.allUsers : data.users,
-                        ['Username', 'Role', 'Created At', 'Subscription Date', 'Artist ID', 'Subscription Status']
+                        ['Username', 'User ID', 'Role', 'Created At', 'Subscription Date', 'Artist ID', 'Subscription Status']
                     ,'allUsers', 'users')}
                 </div>
 

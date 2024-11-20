@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate} from 'react-router-dom';
+import { useParams, useNavigate, Link} from 'react-router-dom';
 import { useAudio } from '../context/AudioContext';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const AlbumSongs = () => {
-    const {albumId} = useParams();
+    const {albumId, artistId} = useParams();
     const navigate = useNavigate();
     const [songs, setSongs] = useState([]);
     const [albumDetails, setAlbumDetails] = useState(null);
@@ -201,9 +201,10 @@ const AlbumSongs = () => {
                 {/* <Link to={`/albums/${artistId}`} className="nav-button">
                     Back to Albums
                 </Link> */}
-                <button onClick={handleGoHome} className="nav-button">
-                    Back to Artists
-                </button>
+                <button className="cancel" onClick={handleGoHome}>home</button>
+                <button className="nav-button">
+                            <Link to={`/artist/${artistId}`}>back to artist page</Link>
+                        </button>
                 {/* <div className="album-actions">
                     {(localStorage.getItem('role') === 'admin' || localStorage.getItem('artistId') === String(artistId)) && (
                         <button

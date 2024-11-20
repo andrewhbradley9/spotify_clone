@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link,useLocation, useNavigate,  } from 'react-router-dom';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -22,6 +22,7 @@ const UploadSong = () => {
     const [albums, setAlbums] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [genres, setGenres] = useState([]);
     const [selectedAlbumId, setSelectedAlbumId] = useState('');
     const [songData, setSongData] = useState({
         title: '',
@@ -36,7 +37,17 @@ const UploadSong = () => {
     const handleGoHome = () => {
         navigate('/artist');
     };
-
+    useEffect(() => {
+        const fetchGenres = async () => {
+            try {
+                const response = await axios.get(`${apiUrl}/artists/genres/types`);
+                setGenres(response.data);
+            } catch (err) {
+                console.error("Error fetching genres:", err);
+            }
+        };
+        fetchGenres();
+    }, []);
     // Fetch albums when the component mounts
     useEffect(() => {
         if (loggedInRole !== 'admin' && loggedInArtistId !== artistIdFromUrl) {
@@ -108,7 +119,7 @@ const UploadSong = () => {
             );
             console.log('Song uploaded successfully:', response.data); // Debugging
             alert('Song uploaded successfully!');
-            navigate('/artist'); // Navigate back to the main screen
+            navigate(`/artist/${artistIdFromUrl}`); // Navigate back to the main screen
         } catch (err) {
             console.error('Error uploading song:', err.response || err.message);
             alert('Error uploading song. Please check your input and try again.');
@@ -140,7 +151,7 @@ const UploadSong = () => {
                         </option>
                         {albums.map((album) => (
                             <option key={album.album_id} value={album.album_id}>
-                                {album.album_name} ({album.release_date})
+                                {album.album_name} ({new Date(album.release_date).toLocaleDateString('en-US')})
                             </option>
                         ))}
                     </select>
@@ -175,13 +186,19 @@ const UploadSong = () => {
                                 value={songData.song_releasedate}
                                 onChange={handleInputChange}
                             />
-                            <input
-                                type="text"
-                                name="genre_type"
-                                placeholder="Genre"
+                            <select
                                 value={songData.genre_type}
                                 onChange={handleInputChange}
-                            />
+                                name="genre_type"
+                                required
+                            >
+                                <option value="" disabled>Select Genre</option>
+                                {genres.map((genre, index) => (
+                                    <option key={index} value={genre.genre_type}>
+                                        {genre.genre_type}
+                                    </option>
+                                ))}
+                            </select>
                             <input
                                 type="text"
                                 name="song_language"
@@ -205,7 +222,12 @@ const UploadSong = () => {
                     )}
                 </form>
             ) : (
+                <div>
                 <p>No albums found. Please create an album first.</p>
+                <button className="upload">
+                            <Link to={`/artist/${loggedInArtistId}`}>back to artist page</Link>
+                        </button>
+                </div>
             )}
         </div>
     );

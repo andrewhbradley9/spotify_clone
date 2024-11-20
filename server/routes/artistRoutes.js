@@ -1651,5 +1651,42 @@ router.get('/albums/songs/:artistId', (req, res) => {
     });
 });
 
+// Endpoint to get all genres
+router.get('/genres/types', (req, res) => {
+    const query = 'SELECT DISTINCT genre_type FROM genre';
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching genres:', err);
+            res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+            res.json(results);
+        }
+    });
+});
+
+router.delete('/user/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Check if the user exists
+        const [userExists] = await db.promise().query('SELECT * FROM user WHERE user_id = ?', [userId]);
+        if (userExists.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Delete the user
+        const [result] = await db.promise().query('DELETE FROM user WHERE user_id = ?', [userId]);
+
+        if (result.affectedRows > 0) {
+            return res.status(200).json({ message: 'User and related records deleted successfully.' });
+        }
+
+        return res.status(500).json({ error: 'Failed to delete user.' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 export default router;
 

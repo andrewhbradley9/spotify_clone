@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect,useState,  } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -17,7 +17,7 @@ const Add = () => {
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [error, setError] = useState(null); // To display error messages
-
+    const [genres, setGenres] = useState([]);
     const navigate = useNavigate();
 
     const handleGoHome = () => {
@@ -35,7 +35,17 @@ const Add = () => {
             setImagePreview(URL.createObjectURL(file));
         }
     };
-
+    useEffect(() => {
+        const fetchGenres = async () => {
+            try {
+                const response = await axios.get(`${apiUrl}/artists/genres/types`);
+                setGenres(response.data);
+            } catch (err) {
+                console.error("Error fetching genres:", err);
+            }
+        };
+        fetchGenres();
+    }, []);
     const handleClick = async (e) => {
         e.preventDefault();
         setError(null); // Reset error state
@@ -110,23 +120,24 @@ const Add = () => {
                     onChange={handleChange}
                     name="awards"
                 />
-                <input
-                    type="text"
-                    placeholder="Genre"
+                <select
+                    value={artist.genre_type}
                     onChange={handleChange}
                     name="genre_type"
-                />
+                    required
+                >
+                    <option value="" disabled>Select Genre</option>
+                    {genres.map((genre, index) => (
+                        <option key={index} value={genre.genre_type}>
+                            {genre.genre_type}
+                        </option>
+                    ))}
+                </select>
                 <input
                     type="number"
                     placeholder="Follower Count"
                     onChange={handleChange}
                     name="follower_count"
-                />
-                <input
-                    type="number"
-                    placeholder="Verified (0 or 1)"
-                    onChange={handleChange}
-                    name="is_verified"
                 />
                 <button className="formButton" onClick={handleClick}>Add</button>
             </div>

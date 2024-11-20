@@ -84,7 +84,7 @@ const UploadAlbum = () => {
                 // Extract the new album ID and redirect to the upload song page
                 const newAlbumId = response.data.album_id || response.data.insertId;
                 console.log('New Album ID:', newAlbumId); // Debugging
-                navigate(`/artist`);
+                navigate(`/artist/${artistId}`);
             }
         } catch (err) {
             console.error('Error during album submission:', err.response || err.message);
