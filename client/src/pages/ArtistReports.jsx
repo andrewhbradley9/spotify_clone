@@ -32,6 +32,12 @@ ChartJS.register(
 
 
 const ArtistReports = () => {
+    const [currentArtistSearchQuery, setCurrentArtistSearchQuery] = useState('');
+    const [currentArtistSearchResults, setCurrentArtistSearchResults] = useState([]);
+
+    const [compareArtistSearchQuery, setCompareArtistSearchQuery] = useState('');
+    const [compareArtistSearchResults, setCompareArtistSearchResults] = useState([]);
+
     const [searchQuery, setSearchQuery] = useState(''); // For storing the search input
     const [searchResults, setSearchResults] = useState([]); // For storing the list of search results
     const userRole = localStorage.getItem('role');
@@ -72,21 +78,75 @@ const ArtistReports = () => {
             console.error('Error searching for artists:', err);
         }
     };
-    const handleSearchSelect = async (id, name) => {
-        setCompareArtistId(id); // Set the artist ID
-        setCompareArtistName(name); // Set the artist name
-        setSearchQuery(''); // Clear the search input
-        setSearchResults([]); // Clear the search results
-        handleFetchArtistInfo(id);
+// Current Artist Search Query Handler
+const handleCurrentArtistSearchQueryChange = async (query) => {
+    setCurrentArtistSearchQuery(query);
+
+    if (query.trim() !== '') {
         try {
-            // Fetch the comparison artist's info immediately after setting the ID
-            const compareResponse = await axios.get(`${apiUrl}/artists/${id}`);
-            console.log("Compare artist data:", compareResponse.data);
-            setCompareArtistInfo(compareResponse.data);
+            const response = await axios.get(`${apiUrl}/artists/search/artistname`, {
+                params: { term: query },
+            });
+            setCurrentArtistSearchResults(response.data); // Update current artist search results
         } catch (err) {
-            console.error('Error fetching compare artist info:', err);
+            console.error("Error fetching current artist suggestions:", err);
         }
-    };
+    } else {
+        setCurrentArtistSearchResults([]); // Clear suggestions when input is empty
+    }
+};
+
+// Comparison Artist Search Query Handler
+const handleCompareArtistSearchQueryChange = async (query) => {
+    setCompareArtistSearchQuery(query);
+
+    if (query.trim() !== '') {
+        try {
+            const response = await axios.get(`${apiUrl}/artists/search/artistname`, {
+                params: { term: query },
+            });
+            setCompareArtistSearchResults(response.data); // Update comparison artist search results
+        } catch (err) {
+            console.error("Error fetching comparison artist suggestions:", err);
+        }
+    } else {
+        setCompareArtistSearchResults([]); // Clear suggestions when input is empty
+    }
+};
+// Handle Current Artist Selection
+const handleCurrentArtistSelect = async (id, name) => {
+    setArtistId(id);
+    setArtistInfo(null); // Clear previous artist info
+    setAlbums([]); // Clear previous albums
+    setSongs([]); // Clear previous songs
+    setCurrentArtistSearchQuery(''); // Clear the search input
+    setCurrentArtistSearchResults([]); // Clear the search results
+
+    try {
+        fetchArtistInfo(id);
+        fetchAlbums(id);
+        fetchSongs(id);
+    } catch (err) {
+        console.error('Error fetching current artist info:', err);
+    }
+};
+
+// Handle Comparison Artist Selection
+const handleCompareArtistSelect = async (id, name) => {
+    setCompareArtistId(id);
+    setCompareArtistName(name);
+    setCompareArtistSearchQuery(''); // Clear the search input
+    setCompareArtistSearchResults([]); // Clear the search results
+
+    try {
+        const compareResponse = await axios.get(`${apiUrl}/artists/${id}`);
+        console.log("Compare artist data:", compareResponse.data);
+        setCompareArtistInfo(compareResponse.data);
+    } catch (err) {
+        console.error("Error fetching compare artist info:", err);
+    }
+};
+
     useEffect(() => {
         if (artistId) {
             fetchArtistInfo(artistId);
@@ -180,7 +240,7 @@ const ArtistReports = () => {
         // Check if we have songs data
         if (songs && songs.length > 0) {
             songs.forEach(song => {
-                totalLikes += parseInt(song.total_likes) || 0;
+                totalLikes += parseInt(song.likes) || 0;
                 totalPlayCount += parseInt(song.total_play_count) || 0;
             });
         }
@@ -371,7 +431,7 @@ const ArtistReports = () => {
     const calculatePerformanceScore = (song) => {
         // Base metrics
         const playCount = song.total_play_count || 0;
-        const likes = song.total_likes || 0;
+        const likes = song.likes || 0;
         
         // Weights for different metrics
         const PLAY_WEIGHT = 1;
@@ -442,7 +502,7 @@ const ArtistReports = () => {
                             <td>{song.album_name}</td>
                             <td>{song.duration}</td>
                             <td>{song.total_play_count || 0}</td>
-                            <td>{song.total_likes || 0}</td>
+                            <td>{song.likes || 0}</td>
                             <td>{calculatePerformanceScore(song)}</td>
                         </tr>
                     ))}
@@ -626,33 +686,33 @@ const ArtistReports = () => {
                 return (
                     <div className="tab-content">
                         <div className="comparison-form">
-                            <div className="input-group">
-                                <label>
-                                Search Artist to Compare:
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => handleSearchQueryChange(e.target.value)}
-                                        placeholder="Enter Artist Name"
-                                    />
-                                    <button type="button" onClick={searchArtists}>
-                                        Search
-                                    </button>
-                                </label>
-                                <div className="search-results">
-                                <ul>
-                                        {searchResults.map((artist) => (
-                                            <li
-                                                key={artist.artist_id}
-                                                onClick={() => handleSearchSelect(artist.artist_id, artist.artistname)}
-                                                style={{ cursor: 'pointer', padding: '5px', borderBottom: '1px solid #ccc' }}
-                                            >
-                                                {artist.artistname}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
+                        <div className="input-group">
+                        <label>
+                            Search Comparison Artist:
+                            <input
+                                type="text"
+                                value={compareArtistSearchQuery}
+                                onChange={(e) => handleCompareArtistSearchQueryChange(e.target.value)}
+                                placeholder="Enter Artist Name"
+                            />
+                            <button type="button" onClick={() => handleCompareArtistSearchQueryChange(compareArtistSearchQuery)}>
+                                Search
+                            </button>
+                        </label>
+                        <div className="search-results">
+                            <ul>
+                                {compareArtistSearchResults.map((artist) => (
+                                    <li
+                                        key={artist.artist_id}
+                                        onClick={() => handleCompareArtistSelect(artist.artist_id, artist.artistname)}
+                                        style={{ cursor: 'pointer', padding: '5px', borderBottom: '1px solid #ccc' }}
+                                    >
+                                        {artist.artistname}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
                         </div>
                         
                         {compareArtistInfo && (
@@ -691,36 +751,55 @@ const ArtistReports = () => {
                 return null;
         }
     };
-    const renderArtistIdInput = () => {
-        if (userRole === 'admin') {
-            return (
-                <div className="input-group">
-                    <label>
-                        Artist ID:
-                        <input
-                            type="text"
-                            value={artistId}
-                            onChange={handleArtistIdChange}
-                            placeholder="Enter Artist ID"
-                            required
-                        />
-                        <p onClick={() =>
-                window.open(`/artist/${artistInfo?.artist_id}`, '_blank')
-            }
-            style={{
-                
-                color: 'red', // Blue color for a link-like appearance
-                padding: '8px',
-                borderRadius: '4px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-            }}>{artistInfo?.artistname || 'Fetching...'}</p>
-                    </label>
-                </div>
-            );
-        }
-        
+const renderArtistIdInput = () => {
+    if (userRole === 'admin') {
+        return (
+<div className="input-group">
+    <label>
+        Search Artist:
+        <input
+            type="text"
+            value={currentArtistSearchQuery}
+            onChange={(e) => handleCurrentArtistSearchQueryChange(e.target.value)}
+            placeholder="Enter Artist Name"
+        />
+        <button type="button" onClick={() => handleCurrentArtistSearchQueryChange(currentArtistSearchQuery)}>
+            Search
+        </button>
+    </label>
+    <div className="search-results">
+        <ul>
+            {currentArtistSearchResults.map((artist) => (
+                <li
+                    key={artist.artist_id}
+                    onClick={() => handleCurrentArtistSelect(artist.artist_id, artist.artistname)}
+                    style={{ cursor: 'pointer', padding: '5px', borderBottom: '1px solid #ccc' }}
+                >
+                    {artist.artistname}
+                </li>
+            ))}
+        </ul>
+    </div>
+                    <p
+                    onClick={() =>
+                        artistInfo &&
+                        window.open(`/artist/${artistInfo.artist_id}`, '_blank')
+                    }
+                    style={{
+                        color: 'red', // Link-like appearance
+                        padding: '8px',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                    }}
+                >
+                    {artistInfo?.artistname || 'Fetching...'}
+                </p>
+</div>
+
+        );
+    }
         return (
             <div className="input-group">
         <p

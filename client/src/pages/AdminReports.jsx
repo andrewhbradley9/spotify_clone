@@ -477,14 +477,9 @@ const AdminReports = () => {
                                 <td>{item.user_id || 'N/A'}</td>
                                 <td>{item.role || 'N/A'}</td>
                                 <td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}</td>
-                                <td>{item.subscription_date ? new Date(item.subscription_date).toLocaleDateString() : 'None'}</td>
+                                
                                 <td>{item.artist_id || 'None'}</td>
-                                <td>
-                                    {item.subscription_date &&
-                                    new Date(item.subscription_date) <= new Date(dateRange.endDate)
-                                        ? 'Active'
-                                        : 'Inactive'}
-                                </td>
+                
                                 <td>
                                 {item.account_status === 'active' ? (
                                     <button
@@ -618,7 +613,7 @@ const AdminReports = () => {
                         </label>
                     {renderTableWithBorders(
                         isAllUsersChecked ? data.allUsers : data.users,
-                        ['Username', 'User ID', 'Role', 'Created At', 'Subscription Date', 'Artist ID', 'Subscription Status','Account Status']
+                        ['Username', 'User ID', 'Role', 'Created At', 'Artist ID', 'Account Status']
                     ,'allUsers', 'users')}
                 </div>
 

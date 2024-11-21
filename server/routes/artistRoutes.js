@@ -1631,6 +1631,7 @@ router.get('/albums/songs/:artistId', (req, res) => {
             s.duration,
             s.play_count as total_play_count,
             al.album_name,
+            COALESCE(s.likes, 0) AS likes,
             COALESCE(COUNT(l.like_id), 0) as total_likes
         FROM 
             song s
