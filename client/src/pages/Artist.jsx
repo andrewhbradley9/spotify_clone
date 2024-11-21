@@ -15,7 +15,7 @@ const Artist = () => {
     const [searchResults, setSearchResults] = useState({ artists: [], songs: [] });
     const [isSearching, setIsSearching] = useState(false);
     const [loading, setLoading] = useState(false);
-
+    const artistId = localStorage.getItem('artistId');
     const userRole = localStorage.getItem('role'); // Fetch user role from localStorage
 
     useEffect(() => {
@@ -109,7 +109,13 @@ const Artist = () => {
                     </button>
                 )}
             </div>
-
+            {userRole === 'artist' && artistId && (
+                        <div className="button-container">
+                            <button className="artist-page-button">
+                                <Link to={`/artist/${artistId}`}>Go to My Artist Page</Link>
+                            </button>
+                        </div>
+                    )}
             <div className="search-bar-container">
                 <input
                     type="text"

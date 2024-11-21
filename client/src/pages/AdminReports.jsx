@@ -59,7 +59,7 @@ const AdminReports = () => {
     });
     const fetchData = async (endpoint, params, setter) => {
         try {
-            const res = await axios.get(`http://localhost:3360/artists/all/${endpoint}`, { params });
+            const res = await axios.get(`${apiUrl}/artists/all/${endpoint}`, { params });
             setter(res.data);
         } catch (err) {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
@@ -219,7 +219,7 @@ const AdminReports = () => {
     
         if (isConfirmed) {
             try {
-                await axios.delete(`http://localhost:3360/artists/user/${userId}`, {
+                await axios.delete(`${apiUrl}/artists/user/${userId}`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                 });
                 alert(`User "${username}" and all associated data have been deleted.`);
@@ -245,7 +245,7 @@ const AdminReports = () => {
             setLoadingUserAction(userId); // Set the user ID being processed
             try {
                 await axios.patch(
-                    `http://localhost:3360/users/${userId}/deactivate`,
+                    `${apiUrl}/users/${userId}/deactivate`,
                     {}, // No payload required for this action
                     {
                         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -282,7 +282,7 @@ const AdminReports = () => {
             setLoadingUserAction(userId); // Set the user ID being processed
             try {
                 await axios.patch(
-                    `http://localhost:3360/users/${userId}/activate`, // Replace with your activation endpoint
+                    `${apiUrl}/users/${userId}/activate`, // Replace with your activation endpoint
                     {}, // No payload required for this action
                     {
                         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },

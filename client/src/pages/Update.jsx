@@ -150,14 +150,18 @@ const Update = () => {
                 ))}
                 </select>
                 {userRole === 'admin' && (
-                    <input
-                        type="number"
-                        placeholder='Follower Count'
-                        value={artist.follower_count}
-                        onChange={handleChange}
-                        name="follower_count"
-                    />
-                )}
+                        <div>
+                            <label htmlFor="follower_count">Follower Count:</label>
+                            <input
+                                type="number"
+                                id="follower_count"
+                                placeholder="Enter follower count"
+                                value={artist.follower_count}
+                                onChange={handleChange}
+                                name="follower_count"
+                            />
+                        </div>
+                    )}
                 <button className="formButton" onClick={handleClick}>Update</button>
             </div>
         </div>
