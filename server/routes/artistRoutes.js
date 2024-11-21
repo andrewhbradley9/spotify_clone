@@ -1692,6 +1692,27 @@ router.delete('/user/:userId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+router.delete('/songs/:songId', async (req, res) => {
+    const { songId } = req.params;
 
+    try {
+        console.log(`Received DELETE request for song ID: ${songId}`);
+
+        // Check if the song exists
+        const [rows] = await db.promise().query('SELECT * FROM song WHERE song_id = ?', [songId]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: `Song with ID ${songId} not found.` });
+        }
+
+        // Delete the song
+        await db.promise().query('DELETE FROM song WHERE song_id = ?', [songId]);
+        console.log(`Song with ID ${songId} deleted successfully.`);
+
+        res.status(200).json({ message: `Song with ID ${songId} has been deleted successfully.` });
+    } catch (err) {
+        console.error('Error deleting the song:', err.message);
+        res.status(500).json({ error: 'An error occurred while deleting the song.', details: err.message });
+    }
+});
 export default router;
 

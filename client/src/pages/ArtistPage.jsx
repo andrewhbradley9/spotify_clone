@@ -226,6 +226,7 @@ const ArtistPage = () => {
                                         
                                     </div>
                                 )}
+                                {(loggedInRole === 'admin' || (loggedInRole === 'artist' && String(artistId) === loggedInArtistId)) && (
                                 <button
                                     className="delete-album-button"
                                     onClick={() => handleDeleteAlbum(album.album_id,album.album_name)}
@@ -233,6 +234,7 @@ const ArtistPage = () => {
                                 >
                                     🗑️
                                 </button>
+                                )}
                                 <div className="album-info">
                                     <h3>{album.album_name}</h3>
                                     <p>{formatDate(album.release_date)}</p>

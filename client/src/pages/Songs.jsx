@@ -14,8 +14,9 @@ const AlbumSongs = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { playSong } = useAudio();
-
+    const userRole = localStorage.getItem('role');
     const authToken = localStorage.getItem('token');
+    const localArtistId = localStorage.getItem('artistId'); // Retrieve artist ID from localStorage
 
     useEffect(() => {
         const fetchAlbumDetails = async () => {
@@ -57,7 +58,23 @@ const AlbumSongs = () => {
 
         fetchAlbumDetails();
     }, [albumId, authToken]);
-
+    const handleDeleteSong = async (songId) => {
+        try {
+            const confirmDelete = window.confirm("Are you sure you want to delete this song?");
+            if (!confirmDelete) return;
+    
+            await axios.delete(`${apiUrl}/artists/songs/${songId}`, {
+                headers: { Authorization: `Bearer ${authToken}` },
+            });
+    
+            alert('Song deleted successfully.');
+            // Optionally refresh song list here
+        } catch (err) {
+            console.error('Error deleting the song:', err);
+            alert('Failed to delete the song. Please try again.');
+        }
+    };
+    
     const handleLikeToggle = async (songId) => {
         try {
             if (likedSongs.has(songId)) {
@@ -179,6 +196,15 @@ const AlbumSongs = () => {
                                 >
                                     Play
                                 </button>
+                                {(userRole === 'admin' || (userRole === 'artist' && String(artistId) === localArtistId)) && (
+                                    <button
+                                        onClick={() => handleDeleteSong(song.song_id)}
+                                        className="delete-button"
+                                        title="Delete Song"
+                                    >
+                                        🗑️
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleReportSong(song.song_id)}
                                     className="report-button"
