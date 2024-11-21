@@ -327,11 +327,6 @@ const ListenerReports = () => {
             if (playCountSortOrder) return b.play_count - a.play_count;
             if (likesSortOrder) return b.likes - a.likes;
             if (followerCountSortOrder) return b.follower_count - a.follower_count;
-            if (releaseDateSortOrder) {
-                const dateA = new Date(a.song_releasedate);
-                const dateB = new Date(b.song_releasedate);
-                return releaseDateSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-            }
             return 0; // Default: No sorting
         });
     
@@ -339,6 +334,7 @@ const ListenerReports = () => {
             const rank = globalRanking.findIndex((song) => song.song_id === songId);
             return rank >= 0 ? rank + 1 : 'N/A';
         };
+        
         // Define sorting logic
         const sortedSongs = [...validSongs].sort((a, b) => {
             if (artistNameSortOrder) {
@@ -383,7 +379,8 @@ const ListenerReports = () => {
     
             return 0; // Default if no sorting is applied
         });
-    
+        const showGlobalRanking =
+        playCountSortOrder || likesSortOrder || followerCountSortOrder;
         // Define ranking logic
         const calculateRank = (index, sortOrder) => {
             return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
@@ -407,11 +404,7 @@ const ListenerReports = () => {
                     <thead>
                         <tr>
                             {/* Conditionally render Ranking Column */}
-                            {isRankingActive && (
-                                <th>
-                                    Ranking ({rankingType})
-                                </th>
-                            )}
+                            {showGlobalRanking && <th>Global Rank</th>}
                             <th
                                 onClick={() => {
                                     const newSortOrder = artistNameSortOrder === 'asc' ? 'desc' : 'asc';
@@ -528,7 +521,7 @@ const ListenerReports = () => {
                         {sortedSongs.length > 0 ? (
                             sortedSongs.map((song, index) => (
                                 <tr key={song.song_id}>
-                               <td>{getGlobalRank(song.song_id)}</td>
+                               {showGlobalRanking && <td>{getGlobalRank(song.song_id)}</td>}
                                 <td>
                                     {song.artistname ? (
                                         <Link to={`/artist/${song.artist_id}`} style={{ color: '#008CBA', textDecoration: 'none' }}>
