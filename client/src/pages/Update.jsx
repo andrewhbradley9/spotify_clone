@@ -13,8 +13,9 @@ const Update = () => {
         follower_count: 0,
         is_verified: 0,
     });
+    const userRole = localStorage.getItem('role');
     const [imagePreview, setImagePreview] = useState(null);
-
+    const [genres, setGenres] = useState([]);
     const navigate = useNavigate();
     const location = useLocation();
     const artistId = location.pathname.split("/")[2];
@@ -75,7 +76,17 @@ const Update = () => {
             console.log("Error during update:",err);
         }
     };
-
+    useEffect(() => {
+        const fetchGenres = async () => {
+            try {
+                const response = await axios.get(`${apiUrl}/artists/genres/types`);
+                setGenres(response.data);
+            } catch (err) {
+                console.error("Error fetching genres:", err);
+            }
+        };
+        fetchGenres();
+    }, []);
     console.log(artist);
     return (
         <div className='form'>
@@ -125,27 +136,28 @@ const Update = () => {
                     onChange={handleChange}
                     name="awards"
                 />
-                <input
-                    type="text"
-                    placeholder='Genre'
+                <select
                     value={artist.genre_type}
                     onChange={handleChange}
                     name="genre_type"
-                />
-                <input
-                    type="number"
-                    placeholder='Follower Count'
-                    value={artist.follower_count}
-                    onChange={handleChange}
-                    name="follower_count"
-                />
-                <input
-                    type="number"
-                    placeholder='Verified (0 or 1)'
-                    value={artist.is_verified}
-                    onChange={handleChange}
-                    name="is_verified"
-                />
+                    required
+                    >
+                    <option value="" disabled>Select Genre</option>
+                    {genres.map((genre, index) => (
+                        <option key={index} value={genre.genre_type}>
+                            {genre.genre_type}
+                </option>
+                ))}
+                </select>
+                {userRole === 'admin' && (
+                    <input
+                        type="number"
+                        placeholder='Follower Count'
+                        value={artist.follower_count}
+                        onChange={handleChange}
+                        name="follower_count"
+                    />
+                )}
                 <button className="formButton" onClick={handleClick}>Update</button>
             </div>
         </div>

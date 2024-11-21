@@ -3,6 +3,7 @@ import ReactPlayer from 'react-player';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 const apiUrl = process.env.REACT_APP_API_URL;
 const PlaySong = () => {
+    const [artist, setArtist] = useState(null);
     const { songId, albumId } = useParams(); // Get songId and albumId from params
     const audioSrc = `${apiUrl}/artists/play/${albumId}/${songId}`;
     // const navigate = useNavigate();

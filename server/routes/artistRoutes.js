@@ -1225,6 +1225,7 @@ router.get('/all/users', (req, res) => {
                 u.role, 
                 u.subscription_date, 
                 u.email, 
+                u.account_status,
                 a.artist_id,
                 a.artistname,
                 COUNT(u.user_id) AS total_users,
@@ -1244,6 +1245,7 @@ router.get('/all/users', (req, res) => {
                 u.role, 
                 u.subscription_date, 
                 u.email, 
+                u.account_status,
                 a.artist_id,
                 a.artistname,
                 COUNT(u.user_id) AS total_users_up_to_date
@@ -1274,6 +1276,7 @@ router.get('/all/users', (req, res) => {
                     role: user.role,
                     subscription_date: user.subscription_date,
                     email: user.email,
+                    account_status: user.account_status,
                     artist_id: user.artist_id || null, // Include artist_id, if available
                 })),
                 last_user_id: results[0]?.last_user_id || null,
@@ -1287,6 +1290,7 @@ router.get('/all/users', (req, res) => {
                     role: user.role,
                     subscription_date: user.subscription_date,
                     email: user.email,
+                    account_status: user.account_status,
                     artist_id: user.artist_id || null, // Include artist_id, if available
                 })),
             };
@@ -1670,13 +1674,13 @@ router.delete('/user/:userId', async (req, res) => {
 
     try {
         // Check if the user exists
-        const [userExists] = await db.promise().query('SELECT * FROM user WHERE user_id = ?', [userId]);
+        const [userExists] = await db.promise().query('SELECT * FROM User WHERE user_id = ?', [userId]);
         if (userExists.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
         // Delete the user
-        const [result] = await db.promise().query('DELETE FROM user WHERE user_id = ?', [userId]);
+        const [result] = await db.promise().query('DELETE FROM User WHERE user_id = ?', [userId]);
 
         if (result.affectedRows > 0) {
             return res.status(200).json({ message: 'User and related records deleted successfully.' });
@@ -1688,5 +1692,6 @@ router.delete('/user/:userId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 export default router;
 

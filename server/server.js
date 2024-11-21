@@ -4,7 +4,8 @@ import cron from 'node-cron';
 import artistRoutes from './routes/artistRoutes.js';
 import authRoute from './routes/authRoute.js';
 import songRoutes from './routes/songRoutes.js';
-import followerRoute from './routes/followerRoute.js'
+import followerRoute from './routes/followerRoute.js';
+import userRoutes from './routes/userRoutes.js';
 import multer from 'multer';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -49,7 +50,7 @@ app.use('/artists', artistRoutes); // Artist routes
 app.use('/auth', authRoute); // Authentication routes
 app.use('/song', songRoutes); // Song routes
 app.use('/follow', followerRoute); // follower routes
-
+app.use('/users', userRoutes);
 // Serve React app for all unknown routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));

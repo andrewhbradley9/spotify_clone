@@ -102,7 +102,11 @@ router.post('/login', async (req, res) => {
         if (user.length === 0) {
             return res.status(404).json({ error: 'User not found.' });
         }
-
+        if (user[0].account_status === 'deactive') {
+            return res.status(403).json({ 
+                error: 'Your account has been temporarily deactivated. Please contact support for assistance.' 
+            });
+        }
         // Compare the provided password with the stored hashed password
         const sanitizedPassword = password.trim();
         const match = await bcrypt.compare(sanitizedPassword, user[0].password);

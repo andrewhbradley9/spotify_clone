@@ -15,8 +15,10 @@ const getCurrentMonthRange = () => {
 
 
 const AdminReports = () => {
+    const [accountStatusFilter, setAccountStatusFilter] = useState('Both');
     const dropdownRef = useRef(null); 
     const navigate = useNavigate();
+    const [loadingUserAction, setLoadingUserAction] = useState(null); // Tracks the user ID being processed
     const usernameDropdownRef = useRef(null); // Username dropdownyyy
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
@@ -57,7 +59,7 @@ const AdminReports = () => {
     });
     const fetchData = async (endpoint, params, setter) => {
         try {
-            const res = await axios.get(`${apiUrl}/artists/all/${endpoint}`, { params });
+            const res = await axios.get(`http://localhost:3360/artists/all/${endpoint}`, { params });
             setter(res.data);
         } catch (err) {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
@@ -87,9 +89,9 @@ const AdminReports = () => {
                 setData((prev) => ({
                     ...prev,
                     totalUsers: data.total_users || 0,
-                    users: data.users || [],
+                    users: data.users || [], // Ensure account_status is in data.users
                 }));
-            });
+            });            
             await fetchData('users', { endDate: dateRange.endDate }, (data) => {
                 setData((prev) => ({
                     ...prev,
@@ -160,6 +162,13 @@ const AdminReports = () => {
         setRoleDropdownVisible(false); // Close the dropdown
     };
     
+    const handleAccountStatusToggle = () => {
+        setAccountStatusFilter((prev) => {
+            if (prev === 'Both') return 'Active';
+            if (prev === 'Active') return 'Deactive';
+            return 'Both';
+        });
+    };
     
     const handleSubscriptionStatusToggle = () => {
         setSubscriptionStatusFilter((prev) => {
@@ -187,6 +196,11 @@ const AdminReports = () => {
                     return !item.subscription_date || new Date(item.subscription_date) > new Date(dateRange.endDate);
                 }
                 return true; // Both
+            })
+            .filter((item) => {
+                if (accountStatusFilter === 'Active') return item.account_status === 'active';
+                if (accountStatusFilter === 'Deactive') return item.account_status === 'deactive';
+                return true; // Both
             });
     
             const toggleUsernameDropdown = (userId, event) => {
@@ -198,6 +212,105 @@ const AdminReports = () => {
                 setUsernameDropdown((prev) => (prev === userId ? null : userId)); // Toggle dropdown
             };
     const handleCheckboxToggle = () => setIsAllUsersChecked((prev) => !prev);
+    const handleDeleteUser = async (userId, username) => {
+        const isConfirmed = window.confirm(
+            `Are you sure you want to delete the user "${username}"? This will delete all associated data!`
+        );
+    
+        if (isConfirmed) {
+            try {
+                await axios.delete(`http://localhost:3360/artists/user/${userId}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                });
+                alert(`User "${username}" and all associated data have been deleted.`);
+                // Refresh the data
+                setData((prev) => ({
+                    ...prev,
+                    users: prev.users.filter((user) => user.user_id !== userId),
+                    allUsers: prev.allUsers.filter((user) => user.user_id !== userId),
+                }));
+            } catch (err) {
+                console.error('Error deleting user:', err);
+                alert('Failed to delete user. Please try again.');
+            }
+        }
+    };
+    
+    const handleDeactivateUser = async (userId, username) => {
+        const isConfirmed = window.confirm(
+            `Are you sure you want to deactivate the user "${username}"? This will disable login but keep all data intact.`
+        );
+    
+        if (isConfirmed) {
+            setLoadingUserAction(userId); // Set the user ID being processed
+            try {
+                await axios.patch(
+                    `http://localhost:3360/users/${userId}/deactivate`,
+                    {}, // No payload required for this action
+                    {
+                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    }
+                );
+                alert(`User "${username}" has been deactivated.`);
+                setData((prev) => ({
+                    ...prev,
+                    users: prev.users.map((user) =>
+                        user.user_id === userId
+                            ? { ...user, account_status: 'inactive', subscription_date: null }
+                            : user
+                    ),
+                    allUsers: prev.allUsers.map((user) =>
+                        user.user_id === userId
+                            ? { ...user, account_status: 'inactive', subscription_date: null }
+                            : user
+                    ),
+                }));
+            } catch (err) {
+                console.error('Error deactivating user:', err);
+                alert('Failed to deactivate user. Please try again.');
+            } finally {
+                setLoadingUserAction(null); // Reset after the action is complete
+            }
+        }
+    };
+    const handleActivateUser = async (userId, username) => {
+        const isConfirmed = window.confirm(
+            `Are you sure you want to activate the user "${username}"? This will re-enable login access.`
+        );
+    
+        if (isConfirmed) {
+            setLoadingUserAction(userId); // Set the user ID being processed
+            try {
+                await axios.patch(
+                    `http://localhost:3360/users/${userId}/activate`, // Replace with your activation endpoint
+                    {}, // No payload required for this action
+                    {
+                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    }
+                );
+                alert(`User "${username}" has been activated.`);
+                setData((prev) => ({
+                    ...prev,
+                    users: prev.users.map((user) =>
+                        user.user_id === userId
+                            ? { ...user, account_status: 'active' }
+                            : user
+                    ),
+                    allUsers: prev.allUsers.map((user) =>
+                        user.user_id === userId
+                            ? { ...user, account_status: 'active' }
+                            : user
+                    ),
+                }));
+            } catch (err) {
+                console.error('Error activating user:', err);
+                alert('Failed to activate user. Please try again.');
+            } finally {
+                setLoadingUserAction(null); // Reset after the action is complete
+            }
+        }
+    };
+    
 
     const renderTableWithBorders = (list, headers) => (
         <div className="table-container">
@@ -207,13 +320,14 @@ const AdminReports = () => {
                         {headers.map((header) => {
                             const isSortable = header === 'Username'; // Set sortable headers
                             const isRoleColumn = header === 'Role'; // Identify the Role column
-    
                             return (
                                 <th
                                     key={header}
                                     onClick={
                                         header === 'Subscription Status'
                                             ? handleSubscriptionStatusToggle // Handle click for Subscription Status
+                                            : header === 'Account Status'
+                                            ? handleAccountStatusToggle
                                             : isSortable
                                             ? () => handleSort('username') // Handle sorting for Username
                                             : null
@@ -221,16 +335,17 @@ const AdminReports = () => {
                                     style={{
                                         position: 'relative',
                                         cursor:
-                                            header === 'Subscription Status' || isSortable || isRoleColumn
+                                            header === 'Subscription Status' || header === 'Account Status' || isSortable || isRoleColumn
                                                 ? 'pointer'
                                                 : 'default',
                                         textDecoration:
-                                            header === 'Subscription Status' || isSortable || isRoleColumn
+                                            header === 'Subscription Status' || header === 'Account Status' || isSortable || isRoleColumn
                                                 ? 'underline'
                                                 : 'none',
                                     }}
                                 >
                                     {header}
+                                    {header === 'Account Status' && ` (${accountStatusFilter})`}
                                     {header === 'Subscription Status' && ` (${subscriptionStatusFilter})`}
                                     {isRoleColumn && (
                                         <span
@@ -370,6 +485,50 @@ const AdminReports = () => {
                                         ? 'Active'
                                         : 'Inactive'}
                                 </td>
+                                <td>
+                                {item.account_status === 'active' ? (
+                                    <button
+                                        style={{
+                                            backgroundColor: 'green',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '5px',
+                                            cursor: 'pointer',
+                                            padding: '5px 10px',
+                                        }}
+                                        onClick={() => handleDeactivateUser(item.user_id, item.username)}
+                                    >
+                                        ✓ Active
+                                    </button>
+                                ) : (
+                                    <button
+                                        style={{
+                                            backgroundColor: 'red',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '5px',
+                                            cursor: 'pointer',
+                                            padding: '5px 10px',
+                                        }}
+                                        onClick={() => handleActivateUser(item.user_id, item.username)}
+                                    >
+                                        X Deactive
+                                    </button>
+                                )}
+                                <button
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '5px',
+                                }}
+                                onClick={() => handleDeleteUser(item.user_id, item.username)} // Attach delete logic
+                                title="Delete User"
+                            >
+                                🗑️
+                            </button>
+                            </td>
+
                             </tr>
                         ))
                     )}
@@ -459,7 +618,7 @@ const AdminReports = () => {
                         </label>
                     {renderTableWithBorders(
                         isAllUsersChecked ? data.allUsers : data.users,
-                        ['Username', 'User ID', 'Role', 'Created At', 'Subscription Date', 'Artist ID', 'Subscription Status']
+                        ['Username', 'User ID', 'Role', 'Created At', 'Subscription Date', 'Artist ID', 'Subscription Status','Account Status']
                     ,'allUsers', 'users')}
                 </div>
 
