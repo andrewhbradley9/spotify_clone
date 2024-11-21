@@ -404,7 +404,9 @@ const ListenerReports = () => {
                     <thead>
                         <tr>
                             {/* Conditionally render Ranking Column */}
-                            {showGlobalRanking && <th>Global Rank</th>}
+                            {showGlobalRanking && (
+                            <th>Rankings by {getRankingType()}</th>
+                        )}
                             <th
                                 onClick={() => {
                                     const newSortOrder = artistNameSortOrder === 'asc' ? 'desc' : 'asc';
