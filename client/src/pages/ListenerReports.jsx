@@ -112,7 +112,10 @@ const ListenerReports = () => {
     
         fetchData();
     }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption]);
-    
+    const handleSongLimitChange = (e) => {
+        const limit = parseInt(e.target.value, 10);
+        setSongLimit(limit > 0 ? limit : 10); // Ensure the limit is a positive number
+    };
     const calculateGenreData = () => {
         const genreCounts = filteredSongs.reduce((acc, song) => {
             if (song.genre_type) {
@@ -320,7 +323,22 @@ const ListenerReports = () => {
             /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
     
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
+        const globalRanking = [...topSongs].sort((a, b) => {
+            if (playCountSortOrder) return b.play_count - a.play_count;
+            if (likesSortOrder) return b.likes - a.likes;
+            if (followerCountSortOrder) return b.follower_count - a.follower_count;
+            if (releaseDateSortOrder) {
+                const dateA = new Date(a.song_releasedate);
+                const dateB = new Date(b.song_releasedate);
+                return releaseDateSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            }
+            return 0; // Default: No sorting
+        });
     
+        const getGlobalRank = (songId) => {
+            const rank = globalRanking.findIndex((song) => song.song_id === songId);
+            return rank >= 0 ? rank + 1 : 'N/A';
+        };
         // Define sorting logic
         const sortedSongs = [...validSongs].sort((a, b) => {
             if (artistNameSortOrder) {
@@ -510,7 +528,7 @@ const ListenerReports = () => {
                         {sortedSongs.length > 0 ? (
                             sortedSongs.map((song, index) => (
                                 <tr key={song.song_id}>
-                                {isRankingActive && <td>{calculateRank(index, rankingType === "Play Count" ? playCountSortOrder : rankingType === "Likes" ? likesSortOrder : followerCountSortOrder)}</td>}
+                               <td>{getGlobalRank(song.song_id)}</td>
                                 <td>
                                     {song.artistname ? (
                                         <Link to={`/artist/${song.artist_id}`} style={{ color: '#008CBA', textDecoration: 'none' }}>
@@ -579,7 +597,7 @@ const ListenerReports = () => {
     return (
         <div>
             <button className="cancel" onClick={handleGoHome}>Home</button>
-            <h1>Monthly Reports</h1>
+            <h1>Monthly Listen Reports</h1>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
     <div>
         <label>
@@ -635,6 +653,19 @@ const ListenerReports = () => {
     >
         Reset Filters
     </button>
+    <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="song-limit" style={{ marginRight: '10px' }}>
+                    Set Top Songs Limit:
+                </label>
+                <input
+                    id="song-limit"
+                    type="number"
+                    value={songLimit}
+                    onChange={handleSongLimitChange}
+                    min="1"
+                    style={{ width: '60px' }}
+                />
+            </div>
     </div>
 </div>
 
