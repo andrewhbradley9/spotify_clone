@@ -140,11 +140,11 @@
     align-items: center; /* Vertically align items */
     justify-content: flex-end; /* Push all items to the right */
     gap: 15px; /* Add spacing between items */
-    margin-left: 1200px; /* Push the entire container to the right */
+    margin-left: 800px; /* Push the entire container to the right */
 }
 
 .navbar-right span {
-    margin-right: 15px; /* Add extra spacing to the "Welcome" message */
+    margin-right: 25px; /* Add extra spacing to the "Welcome" message */
 }
 
 .navbar-right .logout-button {

@@ -146,17 +146,24 @@ const ArtistPage = () => {
                 'Are you sure you want to delete this account? This action cannot be undone.'
             );
     
-            if (isConfirmed) {    
-                alert('Successfully Deleted Account');
+            if (isConfirmed) {
+                // Make DELETE request to backend API
+                const response = await axios.delete(`${apiUrl}/artists/${artistId}`);
     
-                // If the user is an artist and is deleting their own account
-                if (loggedInRole === 'artist' && loggedInArtistId === artistId) {
-                    alert('Bye! It was nice listening to your music!');
-                    localStorage.clear(); // Clear all localStorage
-                    navigate('/login'); // Redirect to login
+                if (response.status === 200) {
+                    alert('Successfully Deleted Account');
+    
+                    // If the user is an artist and is deleting their own account
+                    if (loggedInRole === 'artist' && loggedInArtistId === artistId) {
+                        alert('Bye! It was nice listening to your music!');
+                        localStorage.clear(); // Clear all localStorage
+                        navigate('/login'); // Redirect to login
+                    } else {
+                        alert(`Deleted artist: ${artist.artistname}`);
+                        navigate('/artist'); // Redirect to artist page
+                    }
                 } else {
-                    alert(`Deleted artist: ${artist.artistname}`);
-                    navigate('/artist'); // Redirect to artist page
+                    throw new Error('Failed to delete account');
                 }
             }
         } catch (err) {

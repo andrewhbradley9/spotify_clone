@@ -18,7 +18,7 @@ const AdminReports = () => {
     const [accountStatusFilter, setAccountStatusFilter] = useState('Both');
     const dropdownRef = useRef(null); 
     const navigate = useNavigate();
-    const [loadingUserAction, setLoadingUserAction] = useState(null); // Tracks the user ID being processed
+    const [loadingUserAction, setLoadingUserAction] = useState(null);
     const usernameDropdownRef = useRef(null); // Username dropdownyyy
     const [dateRange, setDateRange] = useState(getCurrentMonthRange());
     const [roleFilter, setRoleFilter] = useState('any'); // Role filter
@@ -39,17 +39,17 @@ const AdminReports = () => {
         allUsers: [], // Ensure this is an array
         subscribers: [],
     });    
-    const [lists, setLists] = useState({
-        inactiveSubscribers: [],
-        cumulativeSubscribers: [],
-    });
-    const [show, setShow] = useState({
-        users: false,
-        allUsers: false,
-        subscribers: false,
-        inactiveSubscribers: false,
-        cumulativeSubscribers: false,
-    });
+    // const [setLists] = useState({
+    //     inactiveSubscribers: [],
+    //     cumulativeSubscribers: [],
+    // });
+    // const [show, setShow] = useState({
+    //     users: false,
+    //     allUsers: false,
+    //     subscribers: false,
+    //     inactiveSubscribers: false,
+    //     cumulativeSubscribers: false,
+    // });
     const [sortOrder, setSortOrder] = useState({
         users: 'asc',
         allUsers: 'asc',
@@ -65,6 +65,8 @@ const AdminReports = () => {
             console.error(`Error fetching ${endpoint}:`, err.response?.data || err.message);
         }
     };
+
+    console.log(loadingUserAction)
     useEffect(() => {
         const handleOutsideClick = (event) => {
             if (
@@ -121,18 +123,18 @@ const AdminReports = () => {
 
         fetchReports();
     }, [dateRange]);
-    const handleToggle = (key) => {
-        const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
-        if (!show[key]) {
-            fetchData('subscribers', params, (data) =>
-                setLists((prev) => ({
-                    ...prev,
-                    [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
-                }))
-            );
-        }
-        setShow((prev) => ({ ...prev, [key]: !prev[key] }));
-    };
+    // const handleToggle = (key) => {
+    //     const params = { endDate: dateRange.endDate, mode: key === 'inactiveSubscribers' ? 'inactive' : 'cumulative' };
+    //     if (!show[key]) {
+    //         fetchData('subscribers', params, (data) =>
+    //             setLists((prev) => ({
+    //                 ...prev,
+    //                 [key]: key === 'inactiveSubscribers' ? data.inactive_subscribers || [] : data.users || [],
+    //             }))
+    //         );
+    //     }
+    //     setShow((prev) => ({ ...prev, [key]: !prev[key] }));
+    // };
     
     const handleDateChange = (key, value) => setDateRange((prev) => ({ ...prev, [key]: value }));
     const handleSort = (field) => {

@@ -38,8 +38,8 @@ const ArtistReports = () => {
     const [compareArtistSearchQuery, setCompareArtistSearchQuery] = useState('');
     const [compareArtistSearchResults, setCompareArtistSearchResults] = useState([]);
 
-    const [searchQuery, setSearchQuery] = useState(''); // For storing the search input
-    const [searchResults, setSearchResults] = useState([]); // For storing the list of search results
+    // const [setSearchQuery] = useState(''); // For storing the search input
+    // const [setSearchResults] = useState([]); // For storing the list of search results
     const userRole = localStorage.getItem('role');
     const [artistId, setArtistId] = useState('');
     const [compareArtistId, setCompareArtistId] = useState('');
@@ -56,6 +56,7 @@ const ArtistReports = () => {
         endDate: new Date().toISOString().split('T')[0] // Today
     });
     const location = useLocation();
+    console.log(compareArtistName); 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
         const artistIdFromUrl = queryParams.get('artist_id');
@@ -64,20 +65,20 @@ const ArtistReports = () => {
             fetchArtistInfo(artistIdFromUrl);
         }
     }, [location]);
-    const handleArtistIdChange = (e) => {
-        setArtistId(e.target.value);
-    };
-    const searchArtists = async () => {
-        if (!searchQuery.trim()) return;
-        try {
-            const response = await axios.get(`${apiUrl}/search/artistname`, {
-                params: { term: searchQuery },
-            });
-            setSearchResults(response.data);
-        } catch (err) {
-            console.error('Error searching for artists:', err);
-        }
-    };
+    // const handleArtistIdChange = (e) => {
+    //     setArtistId(e.target.value);
+    // };
+    // const searchArtists = async () => {
+    //     if (!searchQuery.trim()) return;
+    //     try {
+    //         const response = await axios.get(`${apiUrl}/search/artistname`, {
+    //             params: { term: searchQuery },
+    //         });
+    //         setSearchResults(response.data);
+    //     } catch (err) {
+    //         console.error('Error searching for artists:', err);
+    //     }
+    // };
 // Current Artist Search Query Handler
 const handleCurrentArtistSearchQueryChange = async (query) => {
     setCurrentArtistSearchQuery(query);
@@ -154,33 +155,33 @@ const handleCompareArtistSelect = async (id, name) => {
             fetchAlbums(artistId);
         }
     }, [artistId]);
-    useEffect(() => {
-        if (userRole === 'artist'){
-            const storedArtistId = localStorage.getItem('artistId');
-        if (storedArtistId) {
-            setArtistId(storedArtistId);
-            fetchArtistInfo(storedArtistId);
-            fetchSongs(storedArtistId);
-        }
-        }
-    }, []);
-    const handleSearchQueryChange = async (query) => {
-        setSearchQuery(query);
+    // useEffect(() => {
+    //     if (userRole === 'artist'){
+    //         const storedArtistId = localStorage.getItem('artistId');
+    //     if (storedArtistId) {
+    //         setArtistId(storedArtistId);
+    //         fetchArtistInfo(storedArtistId);
+    //         fetchSongs(storedArtistId);
+    //     }
+    //     }
+    // }, []);
+    // const handleSearchQueryChange = async (query) => {
+    //     setSearchQuery(query);
     
         // Fetch matching artists if the query is not empty
-        if (query.trim() !== '') {
-            try {
-                const response = await axios.get(`${apiUrl}/artists/search/artistname`, {
-                    params: { term: query },
-                });
-                setSearchResults(response.data);
-            } catch (err) {
-                console.error('Error fetching artist suggestions:', err);
-            }
-        } else {
-            setSearchResults([]); // Clear suggestions when input is empty
-        }
-    };
+    //     if (query.trim() !== '') {
+    //         try {
+    //             const response = await axios.get(`${apiUrl}/artists/search/artistname`, {
+    //                 params: { term: query },
+    //             });
+    //             setSearchResults(response.data);
+    //         } catch (err) {
+    //             console.error('Error fetching artist suggestions:', err);
+    //         }
+    //     } else {
+    //         setSearchResults([]); // Clear suggestions when input is empty
+    //     }
+    // };
     const fetchArtistInfo = async (id) => {
         setError(null);
         setArtistInfo(null);
@@ -359,6 +360,7 @@ const handleCompareArtistSelect = async (id, name) => {
                             value={dateRange.startDate}
                             onChange={(e) => handleDateChange('startDate', e.target.value)}
                             className="date-select"
+                            style={{ color: dateRange.startDate ? 'green' : 'red' }}
                         />
                     </div>
                     <div className="input-group">
@@ -369,6 +371,7 @@ const handleCompareArtistSelect = async (id, name) => {
                             value={dateRange.endDate}
                             onChange={(e) => handleDateChange('endDate', e.target.value)}
                             className="date-select"
+                            style={{ color: 'black' }}
                         />
                     </div>
                 </div>
@@ -383,8 +386,9 @@ const handleCompareArtistSelect = async (id, name) => {
                     <tbody>
                         {platformActivity.map((activity, index) => (
                             <tr key={`${activity.id}-${activity.type}-${index}`}>
-                                <td className="date-cell">
+                                <td className="date-cell" style={{ color: 'black' }}>
                                     {new Date(activity.date).toLocaleDateString()}
+                                    
                                 </td>
                                 <td>{activity.type}</td>
                                 <td>{activity.details}</td>

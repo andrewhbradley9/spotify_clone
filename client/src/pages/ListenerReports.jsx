@@ -58,15 +58,15 @@ const ListenerReports = () => {
     const [songNameSortOrder, setSongNameSortOrder] = useState('asc'); // Default A-Z
     const [artistNameSortOrder, setArtistNameSortOrder] = useState('asc'); // Default A-Z
     const [topSongs, setTopSongs] = useState([]);
-    const [topArtists, setTopArtists] = useState([]);
+    const [setTopArtists] = useState([]);
     const [songLimit, setSongLimit] = useState(10); 
-    const [artistLimit, setArtistLimit] = useState(10); 
-    const [sortOrder, setSortOrder] = useState("most");
-    const [mostPlayedGenres, setMostPlayedGenres] = useState([]);
-    const { startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
+    const [artistLimit] = useState(10); 
+    const [sortOrder] = useState("most");
+    const [setMostPlayedGenres] = useState([]);
+    const {startDate: defaultStartDate, endDate: defaultEndDate } = getCurrentMonthRange();
     const [startDate, setStartDate] = useState(defaultStartDate);
     const [endDate, setEndDate] = useState(defaultEndDate);
-    const [dateRangeOption, setDateRangeOption] = useState("currentMonth");
+    const [dateRangeOption] = useState("currentMonth");
     const { playSong } = useAudio();
     useEffect(() => {
         const fetchData = async () => {
@@ -111,7 +111,8 @@ const ListenerReports = () => {
         };
     
         fetchData();
-    }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption]);
+    }, [songLimit, artistLimit, sortOrder, startDate, endDate, dateRangeOption, setTopArtists, setMostPlayedGenres]);
+    
     const handleSongLimitChange = (e) => {
         const limit = parseInt(e.target.value, 10);
         setSongLimit(limit > 0 ? limit : 10); // Ensure the limit is a positive number
@@ -319,8 +320,8 @@ const ListenerReports = () => {
         setIsDropdownOpen((prev) => !prev); // Toggle dropdown visibility
     };
     const renderCombinedTable = (artists, songs) => {
-        const isEnglish = (text) =>
-            /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
+        // const isEnglish = (text) =>
+        //     /^[A-Za-z0-9\s'!"#$%&()*+,\-.\/:;<=>?@[\\\]^_`{|}~]*$/.test(text);
     
         const validSongs = filteredSongs && filteredSongs.length > 0 ? filteredSongs : songs || [];
         const globalRanking = [...topSongs].sort((a, b) => {
@@ -382,9 +383,9 @@ const ListenerReports = () => {
         const showGlobalRanking =
         playCountSortOrder || likesSortOrder || followerCountSortOrder;
         // Define ranking logic
-        const calculateRank = (index, sortOrder) => {
-            return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
-        };
+        // const calculateRank = (index, sortOrder) => {
+        //     return sortOrder === 'desc' ? index + 1 : sortedSongs.length - index;
+        // };
     
         // Determine the current ranking type
         const isRankingActive = playCountSortOrder || likesSortOrder || followerCountSortOrder;
@@ -396,7 +397,7 @@ const ListenerReports = () => {
             return "Default";
         };
     
-        const rankingType = getRankingType();
+        // const rankingType = getRankingType();
     
         return (
             <div className="table-container">
