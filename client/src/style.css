@@ -63,6 +63,7 @@
     cursor: pointer;
     color: gray; /* Default color for unliked state */
     transition: color 0.2s ease; /* Smooth color transition */
+    margin-left: -10px;
 }
 
 .like-button.liked {
@@ -82,7 +83,7 @@
     cursor: pointer;
     color: white;
     font-weight: bold;
-    margin-left: 130px;
+    margin-left: 150px;
     transition: background-color 0.2s ease;
 }
 
