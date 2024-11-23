@@ -532,23 +532,24 @@ router.get('/search/artistname', (req, res) => {
 
 
 // Search songs
-// Search songs
 router.get('/search/songname', (req, res) => {
     const searchTerm = req.query.term;
     if (!searchTerm) {
         return res.status(400).json({ error: 'Search term is required' });
     }
 
+    // Construct query dynamically to handle AGAINST with ORDER BY
+    const searchValue = `${searchTerm}*`; // FULLTEXT search term with wildcard
+    const exactValue = searchTerm; // Exact match check
+
     const query = `
         SELECT * FROM song
         WHERE MATCH(title) AGAINST(? IN BOOLEAN MODE)
-        ORDER BY title = ? DESC, title LIKE ? DESC, MATCH(title) AGAINST(? IN BOOLEAN MODE) DESC
+        ORDER BY title = ? DESC, MATCH(title) AGAINST('${searchValue}' IN BOOLEAN MODE) DESC
+        LIMIT 50;
     `;
-    const searchValue = `${searchTerm}*`; // FULLTEXT search term with wildcard for partial matching
-    const exactValue = searchTerm; // Exact match check
-    const partialValue = `%${searchTerm}%`;
 
-    db.query(query, [searchValue, exactValue, partialValue, searchValue], (err, results) => {
+    db.query(query, [searchValue, exactValue], (err, results) => {
         if (err) {
             console.error('Error executing song search query:', err);
             return res.status(500).json({ error: 'Internal server error' });
@@ -556,6 +557,8 @@ router.get('/search/songname', (req, res) => {
         res.json(results);
     });
 });
+
+
 
 
 
